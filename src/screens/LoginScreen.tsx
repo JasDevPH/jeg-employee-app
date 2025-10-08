@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // FILE: jeg-employee-app/src/screens/LoginScreen.tsx
 import React, { useState } from "react";
 import {
@@ -11,8 +10,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  StatusBar,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
+import { Colors } from "../constants/colors";
+import { API_BASE_URL } from "../config/api";
 
 interface LoginScreenProps {
   navigation: any;
@@ -22,7 +26,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [employeeId, setEmployeeId] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [currentUserData, setCurrentUserData] = useState<any>(null);
+  const [loginResult, setLoginResult] = useState<any>(null);
+  const { login, completeLogin } = useAuth(); // Add completeLogin
 
   const handleLogin = async () => {
     if (!employeeId.trim() || !password.trim()) {
@@ -33,12 +42,35 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setLoading(true);
     try {
       const result = await login(employeeId.trim(), password);
+
       if (result.success) {
-        navigation.replace("Attendance");
+        // Check if password reset is required
+        if (result.requiresPasswordReset) {
+          // Store login result and user data for later use
+          setLoginResult(result);
+          setCurrentUserData({ employeeId: employeeId.trim(), password });
+
+          // Show alert that forces user to choose
+          Alert.alert(
+            "Password Reset Required",
+            "You are using the default password. You must change it for security before proceeding.",
+            [
+              {
+                text: "Change Password",
+                onPress: () => {
+                  setShowResetPassword(true);
+                },
+              },
+            ],
+            {
+              cancelable: false, // Prevents dismissing the alert by tapping outside
+            }
+          );
+        }
+        // Normal login case is handled automatically by AuthContext
       } else {
         Alert.alert("Login Failed", result.error || "Please try again.");
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       Alert.alert("Error", "Network error. Please check your connection.");
     } finally {
@@ -46,80 +78,270 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!newPassword.trim() || !confirmPassword.trim()) {
+      Alert.alert("Error", "Please fill in all password fields");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Error", "New passwords don't match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters long");
+      return;
+    }
+
+    if (!currentUserData) {
+      Alert.alert("Error", "Session expired. Please login again.");
+      setShowResetPassword(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          employeeId: currentUserData.employeeId,
+          currentPassword: currentUserData.password,
+          newPassword: newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        Alert.alert("Success", "Password updated successfully!", [
+          {
+            text: "OK",
+            onPress: async () => {
+              // Complete the login process with stored user data
+              if (loginResult?.user) {
+                await completeLogin(loginResult.user);
+              }
+              setShowResetPassword(false);
+              setCurrentUserData(null);
+              setNewPassword("");
+              setConfirmPassword("");
+              setLoginResult(null);
+              // Navigation will happen automatically via AuthContext
+            },
+          },
+        ]);
+      } else {
+        Alert.alert("Error", data.message || "Failed to update password");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setShowResetPassword(false);
+    setCurrentUserData(null);
+    setNewPassword("");
+    setConfirmPassword("");
+    setLoginResult(null);
+    // Stay on login screen
+  };
+
+  if (showResetPassword) {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={Colors.secondary}
+        />
+        <LinearGradient
+          colors={[Colors.secondary, Colors.secondaryLight]}
+          style={styles.gradient}
+        >
+          <View style={styles.content}>
+            <View style={styles.logoContainer}>
+              <LinearGradient
+                colors={[
+                  Colors.primaryLight,
+                  Colors.primary,
+                  Colors.primaryDark,
+                ]}
+                style={styles.logoGradient}
+              >
+                <Text style={styles.logoText}>JEG</Text>
+              </LinearGradient>
+              <Text style={styles.title}>Reset Password</Text>
+              <Text style={styles.subtitle}>Create a new secure password</Text>
+            </View>
+
+            <View style={styles.formContainer}>
+              <View style={styles.form}>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>New Password</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    placeholder="Enter new password"
+                    placeholderTextColor={Colors.darkGray}
+                    secureTextEntry
+                    editable={!loading}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Confirm Password</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Confirm new password"
+                    placeholderTextColor={Colors.darkGray}
+                    secureTextEntry
+                    editable={!loading}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.loginButton,
+                    loading && styles.loginButtonDisabled,
+                  ]}
+                  onPress={handlePasswordReset}
+                  disabled={loading}
+                >
+                  <LinearGradient
+                    colors={[Colors.primary, Colors.primaryDark]}
+                    style={styles.loginButtonGradient}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color={Colors.white} />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name="shield-checkmark"
+                          size={20}
+                          color={Colors.white}
+                        />
+                        <Text style={styles.loginButtonText}>
+                          Update Password
+                        </Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.skipButton}
+                  onPress={handleBackToLogin}
+                  disabled={loading}
+                >
+                  <Text style={styles.skipButtonText}>Back to Login</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.forgotPasswordButton}
+              onPress={() => navigation.navigate("ResetPassword")}
+              disabled={loading}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </KeyboardAvoidingView>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.content}>
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>JEG</Text>
-          </View>
-          <Text style={styles.title}>Employee Attendance</Text>
-          <Text style={styles.subtitle}>JEG Ventures Payroll System</Text>
-        </View>
-
-        {/* Login Form */}
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Employee ID or Email</Text>
-            <TextInput
-              style={styles.input}
-              value={employeeId}
-              onChangeText={setEmployeeId}
-              placeholder="Enter your employee ID or email"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!loading}
-            />
+      <StatusBar barStyle="light-content" backgroundColor={Colors.secondary} />
+      <LinearGradient
+        colors={[Colors.secondary, Colors.secondaryLight]}
+        style={styles.gradient}
+      >
+        <View style={styles.content}>
+          <View style={styles.logoContainer}>
+            <LinearGradient
+              colors={[Colors.primaryLight, Colors.primary, Colors.primaryDark]}
+              style={styles.logoGradient}
+            >
+              <Text style={styles.logoText}>JEG</Text>
+            </LinearGradient>
+            <Text style={styles.title}>Employee Portal</Text>
+            <Text style={styles.subtitle}>JEG Ventures Payroll System</Text>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter your password"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!loading}
-            />
-          </View>
+          <View style={styles.formContainer}>
+            <View style={styles.form}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Employee ID or Email</Text>
+                <TextInput
+                  style={styles.input}
+                  value={employeeId}
+                  onChangeText={setEmployeeId}
+                  placeholder="Enter your employee ID or email"
+                  placeholderTextColor={Colors.darkGray}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+              </View>
 
-          <TouchableOpacity
-            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text style={styles.loginButtonText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={styles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Enter your password"
+                  placeholderTextColor={Colors.darkGray}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+              </View>
 
-        {/* Demo Credentials */}
-        <View style={styles.demoContainer}>
-          <Text style={styles.demoTitle}>
-            Demo Credentials (password: password123)
-          </Text>
-          <View style={styles.demoGrid}>
-            <View style={styles.demoCard}>
-              <Text style={styles.demoRole}>Employee</Text>
-              <Text style={styles.demoEmail}>EMP001</Text>
+              <TouchableOpacity
+                style={[
+                  styles.loginButton,
+                  loading && styles.loginButtonDisabled,
+                ]}
+                onPress={handleLogin}
+                disabled={loading}
+              >
+                <LinearGradient
+                  colors={[Colors.primary, Colors.primaryDark]}
+                  style={styles.loginButtonGradient}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={Colors.white} />
+                  ) : (
+                    <Text style={styles.loginButtonText}>Sign In</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
-            <View style={styles.demoCard}>
-              <Text style={styles.demoRole}>Manager</Text>
-              <Text style={styles.demoEmail}>manager@jeg.com</Text>
-            </View>
           </View>
         </View>
-      </View>
+      </LinearGradient>
     </KeyboardAvoidingView>
   );
 };
@@ -128,7 +350,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+  },
+  gradient: {
+    flex: 1,
   },
   content: {
     flex: 1,
@@ -139,77 +363,119 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 48,
   },
-  logo: {
-    width: 80,
-    height: 80,
-    backgroundColor: "#0284c7",
-    borderRadius: 16,
+  logoGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 24,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   logoText: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: "bold",
-    color: "#ffffff",
+    color: Colors.white,
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "bold",
-    color: "#0f172a",
+    color: Colors.white,
     marginBottom: 8,
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#64748b",
+    color: Colors.mediumGray,
+    textAlign: "center",
+  },
+  formContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: Colors.secondary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
   form: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   inputContainer: {
     marginBottom: 20,
   },
   label: {
     fontSize: 14,
-    fontWeight: "500",
-    color: "#374151",
+    fontWeight: "600",
+    color: Colors.secondary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: "#ffffff",
+    backgroundColor: Colors.lightGray,
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
+    borderColor: Colors.mediumGray,
+    borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: "#111827",
+    color: Colors.secondary,
   },
   loginButton: {
-    backgroundColor: "#0284c7",
-    borderRadius: 8,
+    borderRadius: 12,
+    marginTop: 8,
+    overflow: "hidden",
+  },
+  loginButtonGradient: {
     padding: 16,
     alignItems: "center",
-    marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "center",
   },
   loginButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.7,
   },
   loginButtonText: {
-    color: "#ffffff",
+    color: Colors.white,
     fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  skipButton: {
+    marginTop: 16,
+    alignItems: "center",
+  },
+  skipButtonText: {
+    color: Colors.darkGray,
+    fontSize: 14,
+  },
+  forgotPasswordButton: {
+    marginTop: 16,
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  forgotPasswordText: {
+    color: Colors.primary,
+    fontSize: 14,
     fontWeight: "600",
   },
   demoContainer: {
-    backgroundColor: "#ffffff",
+    backgroundColor: Colors.lightGray,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: Colors.mediumGray,
   },
   demoTitle: {
     fontSize: 12,
     fontWeight: "500",
-    color: "#6b7280",
+    color: Colors.darkGray,
     marginBottom: 12,
     textAlign: "center",
   },
@@ -219,22 +485,22 @@ const styles = StyleSheet.create({
   },
   demoCard: {
     flex: 1,
-    backgroundColor: "#f9fafb",
+    backgroundColor: Colors.white,
     borderRadius: 8,
     padding: 12,
     marginHorizontal: 4,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: Colors.mediumGray,
   },
   demoRole: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#0284c7",
+    color: Colors.primary,
     marginBottom: 4,
   },
   demoEmail: {
     fontSize: 11,
-    color: "#6b7280",
+    color: Colors.darkGray,
   },
 });
 

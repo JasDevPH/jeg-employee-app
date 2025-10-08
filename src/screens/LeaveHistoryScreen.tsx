@@ -8,10 +8,14 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  StatusBar,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { API_BASE_URL } from "../config/api";
+import { Colors } from "../constants/colors";
 
 interface LeaveRequest {
   id: string;
@@ -25,7 +29,7 @@ interface LeaveRequest {
 }
 
 interface LeaveBalance {
-  annual: {
+  vacation: {
     entitled: number;
     taken: number;
     remaining: number;
@@ -38,7 +42,6 @@ interface LeaveBalance {
 }
 
 interface LeaveHistoryScreenProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   navigation: any;
 }
 
@@ -56,8 +59,16 @@ const LeaveHistoryScreen: React.FC<LeaveHistoryScreenProps> = ({
       try {
         if (!isRefresh) setLoading(true);
 
+        // Use employee.id if available, otherwise use employeeId
+        const actualEmployeeId = user?.employee?.id || user?.employeeId;
+
+        if (!actualEmployeeId) {
+          console.error("No employee ID available");
+          return;
+        }
+
         const response = await fetch(
-          `${API_BASE_URL}/api/leaves/employee/${user?.employeeId}`,
+          `${API_BASE_URL}/api/leaves/employee/${actualEmployeeId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -75,7 +86,7 @@ const LeaveHistoryScreen: React.FC<LeaveHistoryScreenProps> = ({
         setRefreshing(false);
       }
     },
-    [user?.employeeId, token]
+    [user, token] // Remove specific employeeId dependency
   );
 
   useFocusEffect(
@@ -92,26 +103,52 @@ const LeaveHistoryScreen: React.FC<LeaveHistoryScreenProps> = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "APPROVED":
-        return "#10b981";
+        return Colors.success;
       case "REJECTED":
-        return "#ef4444";
+        return Colors.error;
       case "PENDING":
-        return "#f59e0b";
+        return Colors.warning;
       default:
-        return "#6b7280";
+        return Colors.darkGray;
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "APPROVED":
+        return "checkmark-circle";
+      case "REJECTED":
+        return "close-circle";
+      case "PENDING":
+        return "time";
+      default:
+        return "help-circle";
+    }
+  };
+
+  const getLeaveTypeIcon = (type: string) => {
+    switch (type) {
+      case "SICK":
+        return "medical";
+      case "VACATION":
+        return "airplane";
+      case "UNPAID":
+        return "wallet-outline";
+      default:
+        return "calendar";
     }
   };
 
   const getLeaveTypeColor = (type: string) => {
     switch (type) {
       case "SICK":
-        return "#ef4444";
+        return Colors.error;
       case "VACATION":
-        return "#0284c7";
+        return Colors.info;
       case "UNPAID":
-        return "#6b7280";
+        return Colors.darkGray;
       default:
-        return "#8b5cf6";
+        return Colors.primary;
     }
   };
 
@@ -129,22 +166,34 @@ const LeaveHistoryScreen: React.FC<LeaveHistoryScreenProps> = ({
         <View style={styles.leaveTypeContainer}>
           <View
             style={[
-              styles.leaveTypeBadge,
+              styles.leaveTypeIcon,
               { backgroundColor: getLeaveTypeColor(item.type) },
             ]}
           >
-            <Text style={styles.leaveTypeText}>{item.type}</Text>
+            <Ionicons
+              name={getLeaveTypeIcon(item.type) as any}
+              size={20}
+              color={Colors.white}
+            />
           </View>
-          <Text style={styles.leaveDuration}>
-            {calculateDuration(item.startDate, item.endDate)} day(s)
-          </Text>
+          <View style={styles.leaveInfo}>
+            <Text style={styles.leaveType}>{item.type}</Text>
+            <Text style={styles.leaveDuration}>
+              {calculateDuration(item.startDate, item.endDate)} day(s)
+            </Text>
+          </View>
         </View>
         <View
           style={[
-            styles.statusBadge,
+            styles.statusContainer,
             { backgroundColor: getStatusColor(item.status) },
           ]}
         >
+          <Ionicons
+            name={getStatusIcon(item.status) as any}
+            size={16}
+            color={Colors.white}
+          />
           <Text style={styles.statusText}>{item.status}</Text>
         </View>
       </View>
@@ -160,9 +209,21 @@ const LeaveHistoryScreen: React.FC<LeaveHistoryScreenProps> = ({
           </Text>
         )}
         {item.status === "APPROVED" && item.isPaid !== undefined && (
-          <Text style={styles.paidStatus}>
-            {item.isPaid ? "Paid Leave" : "Unpaid Leave"}
-          </Text>
+          <View style={styles.paidContainer}>
+            <Ionicons
+              name={item.isPaid ? "card" : "card-outline"}
+              size={14}
+              color={item.isPaid ? Colors.success : Colors.darkGray}
+            />
+            <Text
+              style={[
+                styles.paidStatus,
+                { color: item.isPaid ? Colors.success : Colors.darkGray },
+              ]}
+            >
+              {item.isPaid ? "Paid Leave" : "Unpaid Leave"}
+            </Text>
+          </View>
         )}
       </View>
 
@@ -175,43 +236,61 @@ const LeaveHistoryScreen: React.FC<LeaveHistoryScreenProps> = ({
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0284c7" />
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.loadingText}>Loading leave data...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Leave Balance */}
+      <StatusBar barStyle="light-content" backgroundColor={Colors.secondary} />
+
+      {/* Leave Balance Header */}
       {leaveBalance && (
-        <View style={styles.balanceContainer}>
+        <LinearGradient
+          colors={[Colors.primary, Colors.primaryDark]}
+          style={styles.balanceContainer}
+        >
           <Text style={styles.balanceTitle}>Leave Balance</Text>
           <View style={styles.balanceCards}>
             <View style={styles.balanceCard}>
-              <Text style={styles.balanceType}>Annual Leave</Text>
+              <Ionicons name="airplane" size={24} color={Colors.primary} />
+              <Text style={styles.balanceType}>Vacation Leave</Text>
               <Text style={styles.balanceValue}>
-                {leaveBalance.annual.remaining}/{leaveBalance.annual.entitled}
+                {leaveBalance.vacation?.remaining || 0}/
+                {leaveBalance.vacation?.entitled || 0}
               </Text>
               <Text style={styles.balanceLabel}>days remaining</Text>
             </View>
             <View style={styles.balanceCard}>
+              <Ionicons name="medical" size={24} color={Colors.error} />
               <Text style={styles.balanceType}>Sick Leave</Text>
               <Text style={styles.balanceValue}>
-                {leaveBalance.sick.remaining}/{leaveBalance.sick.entitled}
+                {leaveBalance.sick?.remaining || 0}/
+                {leaveBalance.sick?.entitled || 0}
               </Text>
               <Text style={styles.balanceLabel}>days remaining</Text>
             </View>
           </View>
-        </View>
+        </LinearGradient>
       )}
 
       {/* Request Button */}
-      <TouchableOpacity
-        style={styles.requestButton}
-        onPress={() => navigation.navigate("LeaveRequest")}
-      >
-        <Text style={styles.requestButtonText}>+ New Leave Request</Text>
-      </TouchableOpacity>
+      <View style={styles.requestContainer}>
+        <TouchableOpacity
+          style={styles.requestButton}
+          onPress={() => navigation.navigate("LeaveRequest")}
+        >
+          <LinearGradient
+            colors={[Colors.primary, Colors.primaryDark]}
+            style={styles.requestButtonGradient}
+          >
+            <Ionicons name="add-circle" size={24} color={Colors.white} />
+            <Text style={styles.requestButtonText}>New Leave Request</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
 
       {/* Leave History */}
       <View style={styles.historyContainer}>
@@ -221,11 +300,21 @@ const LeaveHistoryScreen: React.FC<LeaveHistoryScreenProps> = ({
           renderItem={renderLeaveItem}
           keyExtractor={(item) => item.id}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
           }
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
+              <Ionicons
+                name="document-text-outline"
+                size={64}
+                color={Colors.darkGray}
+              />
               <Text style={styles.emptyText}>No leave requests found</Text>
               <Text style={styles.emptySubtext}>
                 Pull down to refresh or submit a new request
@@ -241,29 +330,35 @@ const LeaveHistoryScreen: React.FC<LeaveHistoryScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: Colors.lightGray,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: Colors.lightGray,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors.darkGray,
   },
   balanceContainer: {
-    backgroundColor: "#ffffff",
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
   balanceTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#0f172a",
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: "bold",
+    color: Colors.white,
+    marginBottom: 16,
+    textAlign: "center",
   },
   balanceCards: {
     flexDirection: "row",
@@ -271,59 +366,77 @@ const styles = StyleSheet.create({
   },
   balanceCard: {
     flex: 1,
-    backgroundColor: "#f8fafc",
-    padding: 16,
-    borderRadius: 8,
-    marginHorizontal: 4,
+    backgroundColor: Colors.white,
+    padding: 20,
+    borderRadius: 16,
+    marginHorizontal: 6,
     alignItems: "center",
+    shadowColor: Colors.secondary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   balanceType: {
     fontSize: 12,
-    fontWeight: "500",
-    color: "#64748b",
+    fontWeight: "600",
+    color: Colors.darkGray,
+    marginTop: 8,
     marginBottom: 4,
   },
   balanceValue: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#0284c7",
+    color: Colors.secondary,
     marginBottom: 2,
   },
   balanceLabel: {
     fontSize: 10,
-    color: "#64748b",
+    color: Colors.darkGray,
+  },
+  requestContainer: {
+    padding: 16,
   },
   requestButton: {
-    backgroundColor: "#0284c7",
-    margin: 16,
-    padding: 16,
-    borderRadius: 8,
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  requestButtonGradient: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
   },
   requestButtonText: {
-    color: "#ffffff",
+    color: Colors.white,
     fontSize: 16,
     fontWeight: "600",
+    marginLeft: 8,
   },
   historyContainer: {
     flex: 1,
     paddingHorizontal: 16,
   },
   historyTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
-    color: "#0f172a",
-    marginBottom: 12,
+    color: Colors.secondary,
+    marginBottom: 16,
   },
   leaveCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: Colors.white,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 12,
-    shadowColor: "#000",
+    shadowColor: Colors.secondary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 3,
   },
   leaveHeader: {
@@ -335,32 +448,41 @@ const styles = StyleSheet.create({
   leaveTypeContainer: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
   },
-  leaveTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 8,
+  leaveTypeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
-  leaveTypeText: {
-    color: "#ffffff",
-    fontSize: 12,
-    fontWeight: "500",
+  leaveInfo: {
+    flex: 1,
+  },
+  leaveType: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.secondary,
   },
   leaveDuration: {
     fontSize: 12,
-    color: "#64748b",
+    color: Colors.darkGray,
     fontWeight: "500",
   },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+  statusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   statusText: {
-    color: "#ffffff",
+    color: Colors.white,
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
+    marginLeft: 4,
   },
   leaveDetails: {
     marginBottom: 8,
@@ -368,36 +490,43 @@ const styles = StyleSheet.create({
   leaveDates: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#0f172a",
-    marginBottom: 4,
+    color: Colors.secondary,
+    marginBottom: 8,
   },
   leaveReason: {
-    fontSize: 12,
-    color: "#64748b",
-    marginBottom: 4,
+    fontSize: 13,
+    color: Colors.darkGray,
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  paidContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   paidStatus: {
     fontSize: 12,
     fontWeight: "500",
-    color: "#059669",
+    marginLeft: 4,
   },
   leaveDate: {
     fontSize: 11,
-    color: "#9ca3af",
+    color: Colors.darkGray,
   },
   emptyContainer: {
     alignItems: "center",
-    paddingVertical: 32,
+    paddingVertical: 64,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "500",
-    color: "#6b7280",
+    color: Colors.darkGray,
+    marginTop: 16,
     marginBottom: 4,
   },
   emptySubtext: {
-    fontSize: 12,
-    color: "#9ca3af",
+    fontSize: 14,
+    color: Colors.darkGray,
+    textAlign: "center",
   },
 });
 

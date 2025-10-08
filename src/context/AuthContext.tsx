@@ -12,11 +12,15 @@ import { API_BASE_URL } from "../config/api";
 
 interface User {
   id: string;
-  employeeId: string;
-  email: string;
+  employeeId?: string; // Make optional since admin users don't have employeeId
+  employeeCode?: string;
+  email?: string;
   role: string;
+  firstName?: string;
+  lastName?: string;
   employee?: {
     id: string;
+    employeeCode?: string;
     firstName: string;
     lastName: string;
     position?: string;
@@ -24,14 +28,19 @@ interface User {
   };
 }
 
+interface LoginResult {
+  success: boolean;
+  error?: string;
+  requiresPasswordReset?: boolean;
+  user?: User;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
   deviceKey: string | null;
-  login: (
-    employeeId: string,
-    password: string
-  ) => Promise<{ success: boolean; error?: string }>;
+  login: (identifier: string, password: string) => Promise<LoginResult>;
+  completeLogin: (userData: User) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -68,7 +77,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (storedToken && storedUser) {
         setToken(storedToken);
-        setDeviceKey(storedDeviceKey); // deviceKey might be null for web users
+        setDeviceKey(storedDeviceKey);
         setUser(JSON.parse(storedUser));
       }
     } catch (error) {
@@ -85,13 +94,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = async (
-    employeeId: string,
+    identifier: string,
     password: string
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<LoginResult> => {
     try {
       const deviceInfo = getDeviceInfo();
 
-      console.log("Attempting login with:", { employeeId, deviceInfo });
+      console.log("Attempting login with:", { identifier, deviceInfo });
 
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
@@ -99,7 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          employeeId,
+          employeeId: identifier, // Can be employeeId or email
           password,
           platform: "mobile",
           deviceInfo,
@@ -109,23 +118,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const data = await response.json();
       console.log("Login response:", { status: response.status, data });
 
-      if (response.ok) {
-        // Store auth data
-        await SecureStore.setItemAsync("token", data.token);
+      // Handle device binding errors FIRST (security priority)
+      if (response.status === 403) {
+        return {
+          success: false,
+          error:
+            data.message ||
+            "Device not authorized. Contact admin to reset device binding.",
+        };
+      }
+
+      // Handle other authentication errors
+      if (!response.ok || !data.success || !data.token) {
+        return {
+          success: false,
+          error: data.message || "Login failed. Please try again.",
+        };
+      }
+
+      // Store token and deviceKey
+      await SecureStore.setItemAsync("token", data.token);
+      setToken(data.token);
+
+      if (data.deviceKey) {
+        await SecureStore.setItemAsync("deviceKey", data.deviceKey);
+        setDeviceKey(data.deviceKey);
+      }
+
+      // Check for password reset (after device validation)
+      if (data.requiresPasswordReset) {
+        return {
+          success: true,
+          requiresPasswordReset: true,
+          user: data.user,
+        };
+      } else {
+        // Normal login - store user and complete login
         await SecureStore.setItemAsync("user", JSON.stringify(data.user));
-
-        // Store device key if provided (mobile users)
-        if (data.deviceKey) {
-          await SecureStore.setItemAsync("deviceKey", data.deviceKey);
-          setDeviceKey(data.deviceKey);
-        }
-
-        setToken(data.token);
         setUser(data.user);
 
-        return { success: true };
-      } else {
-        return { success: false, error: data.message || "Login failed" };
+        return {
+          success: true,
+          requiresPasswordReset: false,
+        };
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -133,6 +168,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         success: false,
         error: "Network error. Please check your connection.",
       };
+    }
+  };
+
+  const completeLogin = async (userData: User) => {
+    try {
+      await SecureStore.setItemAsync("user", JSON.stringify(userData));
+      setUser(userData);
+    } catch (error) {
+      console.error("Complete login error:", error);
     }
   };
 
@@ -157,6 +201,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         token,
         deviceKey,
         login,
+        completeLogin,
         logout,
         isLoading,
       }}

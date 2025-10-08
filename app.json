@@ -7,18 +7,18 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/jeg_logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0284c7"
+      "backgroundColor": "#0F172A"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "This app uses camera to scan QR codes for attendance"
-      }
+        "NSCameraUsageDescription": "This app uses camera to scan QR codes for attendance",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.jasdevph.jegemployeeapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -28,7 +28,8 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "package": "com.jasdevph.jegemployeeapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,7 +40,8 @@
         {
           "cameraPermission": "Allow JEG Employee App to access camera for QR scanning"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {

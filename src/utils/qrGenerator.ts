@@ -8,12 +8,31 @@ interface QRKey {
   key: string;
   validFrom: number;
   validTo: number;
+  hourIndex?: number;
+}
+
+interface KeySyncResponse {
+  keys: QRKey[];
+  syncTimestamp: number;
+  employee: {
+    id: string;
+    employeeCode: string;
+    name: string;
+    activeDevices: number;
+  };
+  keyInfo: {
+    totalKeys: number;
+    validityWindow: string;
+    rotationInterval: string;
+    clockSkewTolerance: string;
+  };
 }
 
 class OfflineQRGenerator {
   private keys: QRKey[] = [];
   private employeeId: string = "";
   private deviceKey: string = "";
+  private lastSync: number = 0;
 
   constructor() {
     this.loadFromStorage();
@@ -21,19 +40,44 @@ class OfflineQRGenerator {
 
   async syncKeys(token: string): Promise<boolean> {
     try {
+      console.log("Syncing QR keys...");
       const response = await fetch(`${API_BASE_URL}/api/qr/keys`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
+      console.log("Keys sync response status:", response.status);
+
       if (response.ok) {
-        const data = await response.json();
-        this.keys = data.keys;
-        this.employeeId = data.employeeId;
+        const data: KeySyncResponse = await response.json();
+        console.log("Keys sync response:", {
+          keyCount: data.keys?.length,
+          employeeId: data.employee?.id,
+          syncTimestamp: data.syncTimestamp,
+        });
+
+        this.keys = data.keys || [];
+        // Use the employee ID from the response
+        this.employeeId = data.employee?.id || "";
+        this.lastSync = data.syncTimestamp || Date.now();
+
         await this.saveToStorage();
+
+        console.log("Keys synced successfully:", {
+          totalKeys: this.keys.length,
+          employeeId: this.employeeId,
+          hasDeviceKey: !!this.deviceKey,
+        });
+
         return true;
+      } else {
+        const errorText = await response.text();
+        console.error("Keys sync failed:", response.status, errorText);
       }
     } catch (error) {
-      console.error("Key sync failed:", error);
+      console.error("Key sync network error:", error);
     }
     return false;
   }
@@ -43,23 +87,47 @@ class OfflineQRGenerator {
   ): Promise<string | null> {
     const now = Date.now();
 
+    console.log("Generating QR for:", {
+      type,
+      now: new Date(now).toISOString(),
+      employeeId: this.employeeId,
+      hasDeviceKey: !!this.deviceKey,
+      availableKeys: this.keys.length,
+    });
+
+    // Find valid key for current time
     const validKey = this.keys.find(
       (key) => now >= key.validFrom && now <= key.validTo
     );
 
-    if (!validKey || !this.employeeId || !this.deviceKey) {
-      console.log("Missing data for QR generation:", {
-        validKey: !!validKey,
-        employeeId: this.employeeId,
-        deviceKey: this.deviceKey,
-      });
+    if (!validKey) {
+      console.log(
+        "No valid key found. Available keys:",
+        this.keys.map((k) => ({
+          validFrom: new Date(k.validFrom).toISOString(),
+          validTo: new Date(k.validTo).toISOString(),
+          hourIndex: k.hourIndex,
+        }))
+      );
       return null;
     }
 
+    if (!this.employeeId) {
+      console.error("Missing employeeId - sync keys first");
+      return null;
+    }
+
+    if (!this.deviceKey) {
+      console.error("Missing deviceKey - check authentication");
+      return null;
+    }
+
+    // Generate nonce
     const nonce = await Crypto.getRandomBytesAsync(8);
     const nonceString = Array.from(nonce)
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
+
     const expiry = now + 30 * 1000; // 30 seconds expiry
 
     const payload = {
@@ -71,10 +139,9 @@ class OfflineQRGenerator {
       expiry,
     };
 
-    console.log("Generating QR with payload:", payload);
-    console.log("Using key:", validKey.key);
+    console.log("QR payload:", payload);
 
-    // Create signature using SHA256 (must match backend validation)
+    // Create signature using the same method as backend
     const payloadString = JSON.stringify(payload);
     const signature = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
@@ -82,37 +149,67 @@ class OfflineQRGenerator {
       { encoding: Crypto.CryptoEncoding.HEX }
     );
 
-    console.log("Generated signature:", signature);
-
     const qrData = {
       ...payload,
       signature,
     };
 
-    return btoa(JSON.stringify(qrData));
+    const qrString = JSON.stringify(qrData);
+    const base64QR = btoa(qrString);
+
+    console.log("Generated QR data length:", base64QR.length);
+
+    return base64QR;
+  }
+
+  setEmployeeId(employeeId: string) {
+    console.log("Setting employeeId:", employeeId);
+    this.employeeId = employeeId;
+    this.saveToStorage();
   }
 
   setDeviceKey(deviceKey: string) {
+    console.log("Setting deviceKey:", deviceKey ? "present" : "missing");
     this.deviceKey = deviceKey;
     this.saveToStorage();
   }
 
   hasValidKeys(): boolean {
     const now = Date.now();
-    return this.keys.some((key) => now >= key.validFrom && now <= key.validTo);
+    const validKeys = this.keys.filter(
+      (key) => now >= key.validFrom && now <= key.validTo
+    );
+
+    return validKeys.length > 0 && !!this.employeeId && !!this.deviceKey;
+  }
+
+  getStatus() {
+    const now = Date.now();
+    const validKeys = this.keys.filter(
+      (key) => now >= key.validFrom && now <= key.validTo
+    );
+
+    return {
+      totalKeys: this.keys.length,
+      validKeys: validKeys.length,
+      hasEmployeeId: !!this.employeeId,
+      hasDeviceKey: !!this.deviceKey,
+      lastSync: this.lastSync,
+      isReady: this.hasValidKeys(),
+    };
   }
 
   private async saveToStorage() {
     try {
-      await AsyncStorage.setItem(
-        "qr_keys",
-        JSON.stringify({
-          keys: this.keys,
-          employeeId: this.employeeId,
-          deviceKey: this.deviceKey,
-          lastSync: Date.now(),
-        })
-      );
+      const dataToSave = {
+        keys: this.keys,
+        employeeId: this.employeeId,
+        deviceKey: this.deviceKey,
+        lastSync: this.lastSync,
+        savedAt: Date.now(),
+      };
+
+      await AsyncStorage.setItem("qr_keys", JSON.stringify(dataToSave));
     } catch (error) {
       console.error("Failed to save QR keys:", error);
     }
@@ -126,10 +223,26 @@ class OfflineQRGenerator {
         this.keys = data.keys || [];
         this.employeeId = data.employeeId || "";
         this.deviceKey = data.deviceKey || "";
+        this.lastSync = data.lastSync || 0;
+
+        console.log("QR data loaded from storage:", {
+          keys: this.keys.length,
+          employeeId: this.employeeId ? "present" : "missing",
+          deviceKey: this.deviceKey ? "present" : "missing",
+        });
       }
     } catch (error) {
       console.error("Failed to load QR keys:", error);
     }
+  }
+
+  async clearStorage() {
+    this.keys = [];
+    this.employeeId = "";
+    this.deviceKey = "";
+    this.lastSync = 0;
+    await AsyncStorage.removeItem("qr_keys");
+    console.log("QR storage cleared");
   }
 }
 
