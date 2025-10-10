@@ -1,4 +1,4 @@
-// FILE: jeg-employee-app/src/screens/ProfileScreen.tsx
+// FILE: src/screens/ProfileScreen.tsx
 import React from "react";
 import {
   View,
@@ -238,7 +238,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => navigation.navigate("ForgotPassword")}
+            onPress={() => navigation.navigate("ResetPassword")}
           >
             <Ionicons name="key-outline" size={20} color={Colors.primary} />
             <Text style={styles.actionButtonText}>Change Password</Text>
@@ -415,30 +415,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: Colors.secondary,
   },
-  actionsSection: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    marginBottom: 24,
-    shadowColor: Colors.secondary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  actionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  actionText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "500",
-    color: Colors.secondary,
-  },
   logoutButton: {
     borderRadius: 16,
     overflow: "hidden",
@@ -461,26 +437,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     marginLeft: 12,
-  },
-  debugContainer: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: Colors.warning,
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.warning,
-    marginBottom: 8,
-  },
-  debugText: {
-    fontSize: 12,
-    color: Colors.darkGray,
-    fontFamily: "monospace",
-    marginBottom: 4,
   },
 });
 

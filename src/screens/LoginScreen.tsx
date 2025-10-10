@@ -1,4 +1,4 @@
-// FILE: jeg-employee-app/src/screens/LoginScreen.tsx
+// FILE: src/screens/LoginScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -31,7 +31,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [currentUserData, setCurrentUserData] = useState<any>(null);
   const [loginResult, setLoginResult] = useState<any>(null);
-  const { login, completeLogin } = useAuth(); // Add completeLogin
+  const { login, completeLogin } = useAuth();
 
   const handleLogin = async () => {
     if (!employeeId.trim() || !password.trim()) {
@@ -44,13 +44,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       const result = await login(employeeId.trim(), password);
 
       if (result.success) {
-        // Check if password reset is required
         if (result.requiresPasswordReset) {
-          // Store login result and user data for later use
           setLoginResult(result);
           setCurrentUserData({ employeeId: employeeId.trim(), password });
 
-          // Show alert that forces user to choose
           Alert.alert(
             "Password Reset Required",
             "You are using the default password. You must change it for security before proceeding.",
@@ -63,11 +60,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               },
             ],
             {
-              cancelable: false, // Prevents dismissing the alert by tapping outside
+              cancelable: false,
             }
           );
         }
-        // Normal login case is handled automatically by AuthContext
       } else {
         Alert.alert("Login Failed", result.error || "Please try again.");
       }
@@ -121,7 +117,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           {
             text: "OK",
             onPress: async () => {
-              // Complete the login process with stored user data
               if (loginResult?.user) {
                 await completeLogin(loginResult.user);
               }
@@ -130,7 +125,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               setNewPassword("");
               setConfirmPassword("");
               setLoginResult(null);
-              // Navigation will happen automatically via AuthContext
             },
           },
         ]);
@@ -150,7 +144,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setNewPassword("");
     setConfirmPassword("");
     setLoginResult(null);
-    // Stay on login screen
+  };
+
+  const handleForgotPassword = () => {
+    navigation.navigate("ResetPassword");
   };
 
   if (showResetPassword) {
@@ -253,13 +250,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
             </View>
-            <TouchableOpacity
-              style={styles.forgotPasswordButton}
-              onPress={() => navigation.navigate("ResetPassword")}
-              disabled={loading}
-            >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
           </View>
         </LinearGradient>
       </KeyboardAvoidingView>
@@ -338,6 +328,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   )}
                 </LinearGradient>
               </TouchableOpacity>
+
+              {/* ADDED: Forgot Password Button */}
+              <TouchableOpacity
+                style={styles.forgotPasswordButton}
+                onPress={handleForgotPassword}
+                disabled={loading}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -346,7 +345,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   );
 };
 
-// ... styles remain the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -464,43 +462,6 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 14,
     fontWeight: "600",
-  },
-  demoContainer: {
-    backgroundColor: Colors.lightGray,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.mediumGray,
-  },
-  demoTitle: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: Colors.darkGray,
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  demoGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  demoCard: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    borderRadius: 8,
-    padding: 12,
-    marginHorizontal: 4,
-    borderWidth: 1,
-    borderColor: Colors.mediumGray,
-  },
-  demoRole: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: Colors.primary,
-    marginBottom: 4,
-  },
-  demoEmail: {
-    fontSize: 11,
-    color: Colors.darkGray,
   },
 });
 
