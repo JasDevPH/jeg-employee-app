@@ -1,4 +1,4 @@
-// FILE: src/screens/LoginScreen.tsx
+// FILE: jeg-employee-app/src/screens/LoginScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -26,9 +26,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [employeeId, setEmployeeId] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentUserData, setCurrentUserData] = useState<any>(null);
   const [loginResult, setLoginResult] = useState<any>(null);
   const { login, completeLogin } = useAuth();
@@ -124,6 +127,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               setCurrentUserData(null);
               setNewPassword("");
               setConfirmPassword("");
+              setShowNewPassword(false);
+              setShowConfirmPassword(false);
               setLoginResult(null);
             },
           },
@@ -143,6 +148,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setCurrentUserData(null);
     setNewPassword("");
     setConfirmPassword("");
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
     setLoginResult(null);
   };
 
@@ -184,32 +191,64 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               <View style={styles.form}>
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>New Password</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    placeholder="Enter new password"
-                    placeholderTextColor={Colors.darkGray}
-                    secureTextEntry
-                    editable={!loading}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.inputWithIcon}
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      placeholder="Enter new password"
+                      placeholderTextColor={Colors.darkGray}
+                      secureTextEntry={!showNewPassword}
+                      editable={!loading}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowNewPassword(!showNewPassword)}
+                      style={styles.eyeIcon}
+                    >
+                      <Ionicons
+                        name={
+                          showNewPassword ? "eye-off-outline" : "eye-outline"
+                        }
+                        size={20}
+                        color={Colors.darkGray}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Confirm Password</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    placeholder="Confirm new password"
-                    placeholderTextColor={Colors.darkGray}
-                    secureTextEntry
-                    editable={!loading}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.inputWithIcon}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      placeholder="Confirm new password"
+                      placeholderTextColor={Colors.darkGray}
+                      secureTextEntry={!showConfirmPassword}
+                      editable={!loading}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TouchableOpacity
+                      onPress={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      style={styles.eyeIcon}
+                    >
+                      <Ionicons
+                        name={
+                          showConfirmPassword
+                            ? "eye-off-outline"
+                            : "eye-outline"
+                        }
+                        size={20}
+                        color={Colors.darkGray}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <TouchableOpacity
@@ -296,17 +335,29 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Password</Text>
-                <TextInput
-                  style={styles.input}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Enter your password"
-                  placeholderTextColor={Colors.darkGray}
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!loading}
-                />
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.inputWithIcon}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Enter your password"
+                    placeholderTextColor={Colors.darkGray}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!loading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    <Ionicons
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color={Colors.darkGray}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <TouchableOpacity
@@ -329,7 +380,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 </LinearGradient>
               </TouchableOpacity>
 
-              {/* ADDED: Forgot Password Button */}
               <TouchableOpacity
                 style={styles.forgotPasswordButton}
                 onPress={handleForgotPassword}
@@ -424,6 +474,23 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     color: Colors.secondary,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.lightGray,
+    borderWidth: 1,
+    borderColor: Colors.mediumGray,
+    borderRadius: 12,
+  },
+  inputWithIcon: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+    color: Colors.secondary,
+  },
+  eyeIcon: {
+    padding: 16,
   },
   loginButton: {
     borderRadius: 12,

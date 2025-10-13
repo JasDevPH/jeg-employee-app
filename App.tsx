@@ -15,6 +15,7 @@ import LeaveHistoryScreen from "./src/screens/LeaveHistoryScreen";
 import LeaveRequestScreen from "./src/screens/LeaveRequestScreen";
 import PayslipScreen from "./src/screens/PayslipScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
+import ResetPasswordScreen from "./src/screens/ResetPasswordScreen"; // ADDED
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { Colors } from "./src/constants/colors";
 
@@ -123,13 +124,39 @@ function AppNavigator() {
               headerTitleStyle: { fontWeight: "600" },
             }}
           />
+          {/* ADDED: Reset Password screen for logged-in users */}
+          <Stack.Screen
+            name="ResetPassword"
+            component={ResetPasswordScreen}
+            options={{
+              title: "Change Password",
+              headerStyle: {
+                backgroundColor: Colors.secondary,
+                shadowColor: Colors.secondary,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 4,
+              },
+              headerTintColor: Colors.white,
+              headerTitleStyle: { fontWeight: "600" },
+            }}
+          />
         </>
       ) : (
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{ headerShown: false }}
-        />
+        <>
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{ headerShown: false }}
+          />
+          {/* ADDED: Reset Password screen for logged-out users */}
+          <Stack.Screen
+            name="ResetPassword"
+            component={ResetPasswordScreen}
+            options={{ headerShown: false }}
+          />
+        </>
       )}
     </Stack.Navigator>
   );
