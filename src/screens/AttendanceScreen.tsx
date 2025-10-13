@@ -10,13 +10,25 @@ import {
   Platform,
   StatusBar,
   ScrollView,
+  Dimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg";
 import * as ScreenCapture from "expo-screen-capture";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { qrGenerator } from "../utils/qrGenerator";
 import { Colors } from "../constants/colors";
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+// Responsive sizing
+const isSmallScreen = SCREEN_WIDTH < 375;
+const scale = SCREEN_WIDTH / 375;
+
+const normalize = (size: number) => {
+  return Math.round(size * scale);
+};
 
 interface AttendanceScreenProps {
   navigation: any;
@@ -159,10 +171,10 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
 
   if (!user) {
     return (
-      <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.loadingContainer} edges={["top", "bottom"]}>
         <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingText}>Loading...</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -174,8 +186,12 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
       ? "Good Afternoon"
       : "Good Evening";
 
+  // Responsive QR size
+  const qrSize = Math.min(SCREEN_WIDTH * 0.55, 240);
+  const cardWidth = (SCREEN_WIDTH - 60) / 2;
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
 
       {/* Modern Header */}
@@ -183,11 +199,15 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
             <View style={styles.avatarCircle}>
-              <Ionicons name="person" size={24} color={Colors.primary} />
+              <Ionicons
+                name="person"
+                size={normalize(24)}
+                color={Colors.primary}
+              />
             </View>
             <View style={styles.userDetails}>
               <Text style={styles.greetingText}>{greeting}</Text>
-              <Text style={styles.userName}>
+              <Text style={styles.userName} numberOfLines={1}>
                 {user.employee?.firstName || user.role?.replace("_", " ")}
               </Text>
             </View>
@@ -198,18 +218,22 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
           >
             <Ionicons
               name="log-out-outline"
-              size={24}
+              size={normalize(22)}
               color={Colors.textSecondary}
             />
           </TouchableOpacity>
         </View>
 
         <View style={styles.dateCard}>
-          <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
-          <Text style={styles.dateText}>
+          <Ionicons
+            name="calendar-outline"
+            size={normalize(14)}
+            color={Colors.primary}
+          />
+          <Text style={styles.dateText} numberOfLines={1}>
             {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
+              weekday: isSmallScreen ? "short" : "long",
+              month: "short",
               day: "numeric",
               year: "numeric",
             })}
@@ -234,7 +258,7 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
                 >
                   <Ionicons
                     name={getQRTypeIcon(qrType!) as any}
-                    size={28}
+                    size={normalize(28)}
                     color={Colors.primary}
                   />
                 </View>
@@ -244,7 +268,7 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
               <View style={styles.qrCodeWrapper}>
                 <QRCode
                   value={currentQR}
-                  size={240}
+                  size={qrSize}
                   backgroundColor={Colors.white}
                   color={Colors.secondary}
                 />
@@ -254,7 +278,7 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
                 <View style={styles.timerBadge}>
                   <Ionicons
                     name="time-outline"
-                    size={20}
+                    size={normalize(18)}
                     color={Colors.error}
                   />
                   <Text style={styles.timerText}>{timeLeft}s remaining</Text>
@@ -268,7 +292,7 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
               <View style={styles.securityNote}>
                 <Ionicons
                   name="shield-checkmark"
-                  size={16}
+                  size={normalize(14)}
                   color={Colors.success}
                 />
                 <Text style={styles.securityText}>
@@ -286,7 +310,7 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
                 <View style={styles.warningHeader}>
                   <Ionicons
                     name="alert-circle"
-                    size={24}
+                    size={normalize(22)}
                     color={Colors.warning}
                   />
                   <Text style={styles.warningTitle}>Setup Required</Text>
@@ -304,7 +328,11 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
                     <ActivityIndicator color={Colors.white} size="small" />
                   ) : (
                     <>
-                      <Ionicons name="sync" size={18} color={Colors.white} />
+                      <Ionicons
+                        name="sync"
+                        size={normalize(16)}
+                        color={Colors.white}
+                      />
                       <Text style={styles.syncButtonText}>Sync Keys Now</Text>
                     </>
                   )}
@@ -316,6 +344,7 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
               <TouchableOpacity
                 style={[
                   styles.actionCard,
+                  { width: cardWidth },
                   !keysAvailable && styles.disabledCard,
                 ]}
                 onPress={() => generateQR("TIME_IN")}
@@ -327,15 +356,24 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
                     { backgroundColor: `${Colors.success}20` },
                   ]}
                 >
-                  <Ionicons name="log-in" size={32} color={Colors.success} />
+                  <Ionicons
+                    name="log-in"
+                    size={normalize(28)}
+                    color={Colors.success}
+                  />
                 </View>
-                <Text style={styles.actionTitle}>Time In</Text>
-                <Text style={styles.actionSubtitle}>Start your day</Text>
+                <Text style={styles.actionTitle} numberOfLines={1}>
+                  Time In
+                </Text>
+                <Text style={styles.actionSubtitle} numberOfLines={1}>
+                  Start your day
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
                   styles.actionCard,
+                  { width: cardWidth },
                   !keysAvailable && styles.disabledCard,
                 ]}
                 onPress={() => generateQR("BREAK_IN")}
@@ -347,15 +385,24 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
                     { backgroundColor: `${Colors.warning}20` },
                   ]}
                 >
-                  <Ionicons name="cafe" size={32} color={Colors.warning} />
+                  <Ionicons
+                    name="cafe"
+                    size={normalize(28)}
+                    color={Colors.warning}
+                  />
                 </View>
-                <Text style={styles.actionTitle}>Break In</Text>
-                <Text style={styles.actionSubtitle}>Take a break</Text>
+                <Text style={styles.actionTitle} numberOfLines={1}>
+                  Break In
+                </Text>
+                <Text style={styles.actionSubtitle} numberOfLines={1}>
+                  Take a break
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
                   styles.actionCard,
+                  { width: cardWidth },
                   !keysAvailable && styles.disabledCard,
                 ]}
                 onPress={() => generateQR("BREAK_OUT")}
@@ -367,15 +414,24 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
                     { backgroundColor: `${Colors.info}20` },
                   ]}
                 >
-                  <Ionicons name="play" size={32} color={Colors.info} />
+                  <Ionicons
+                    name="play"
+                    size={normalize(28)}
+                    color={Colors.info}
+                  />
                 </View>
-                <Text style={styles.actionTitle}>Break Out</Text>
-                <Text style={styles.actionSubtitle}>Resume work</Text>
+                <Text style={styles.actionTitle} numberOfLines={1}>
+                  Break Out
+                </Text>
+                <Text style={styles.actionSubtitle} numberOfLines={1}>
+                  Resume work
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
                   styles.actionCard,
+                  { width: cardWidth },
                   !keysAvailable && styles.disabledCard,
                 ]}
                 onPress={() => generateQR("TIME_OUT")}
@@ -387,10 +443,18 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
                     { backgroundColor: `${Colors.error}20` },
                   ]}
                 >
-                  <Ionicons name="log-out" size={32} color={Colors.error} />
+                  <Ionicons
+                    name="log-out"
+                    size={normalize(28)}
+                    color={Colors.error}
+                  />
                 </View>
-                <Text style={styles.actionTitle}>Time Out</Text>
-                <Text style={styles.actionSubtitle}>End your day</Text>
+                <Text style={styles.actionTitle} numberOfLines={1}>
+                  Time Out
+                </Text>
+                <Text style={styles.actionSubtitle} numberOfLines={1}>
+                  End your day
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -410,7 +474,7 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
               },
             ]}
           />
-          <Text style={styles.statusText}>
+          <Text style={styles.statusText} numberOfLines={1}>
             {keysAvailable ? "Ready • Offline capable" : "Sync required"}
           </Text>
         </View>
@@ -421,7 +485,7 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
           </View>
         )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -438,15 +502,15 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
+    fontSize: normalize(15),
     color: Colors.textSecondary,
     fontWeight: "500",
   },
   modernHeader: {
     backgroundColor: Colors.surface,
-    paddingTop: Platform.OS === "ios" ? 60 : 20,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -454,40 +518,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
+    marginRight: 8,
   },
   avatarCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: normalize(42),
+    height: normalize(42),
+    borderRadius: normalize(21),
     backgroundColor: `${Colors.primary}20`,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 10,
   },
   userDetails: {
     flex: 1,
   },
   greetingText: {
-    fontSize: 14,
+    fontSize: normalize(12),
     color: Colors.textSecondary,
     fontWeight: "500",
   },
   userName: {
-    fontSize: 20,
+    fontSize: normalize(18),
     fontWeight: "700",
     color: Colors.textPrimary,
     letterSpacing: -0.3,
   },
   logoutIconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: normalize(36),
+    height: normalize(36),
+    borderRadius: normalize(18),
     backgroundColor: Colors.lightGray,
     justifyContent: "center",
     alignItems: "center",
@@ -496,31 +561,35 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.primaryFaded,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     alignSelf: "flex-start",
+    maxWidth: "100%",
   },
   dateText: {
-    fontSize: 12,
+    fontSize: normalize(11),
     color: Colors.primary,
     fontWeight: "600",
-    marginLeft: 6,
+    marginLeft: 4,
+    flexShrink: 1,
   },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    padding: 16,
+    paddingBottom: 24,
   },
   qrSection: {
     flex: 1,
     justifyContent: "center",
+    minHeight: SCREEN_HEIGHT * 0.6,
   },
   qrCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 24,
-    padding: 32,
+    borderRadius: 20,
+    padding: isSmallScreen ? 20 : 28,
     alignItems: "center",
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 },
@@ -530,56 +599,56 @@ const styles = StyleSheet.create({
   },
   qrHeader: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 24,
   },
   qrIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: normalize(36),
+    height: normalize(36),
+    borderRadius: normalize(28),
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 6,
   },
   qrTitle: {
-    fontSize: 24,
+    fontSize: normalize(16),
     fontWeight: "700",
     color: Colors.textPrimary,
     letterSpacing: -0.5,
   },
   qrCodeWrapper: {
     backgroundColor: Colors.white,
-    padding: 24,
-    borderRadius: 20,
-    marginBottom: 24,
+    padding: isSmallScreen ? 16 : 20,
+    borderRadius: 16,
+    marginBottom: 15,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   timerSection: {
-    marginBottom: 24,
+    marginBottom: 12,
   },
   timerBadge: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: `${Colors.error}15`,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   timerText: {
-    fontSize: 16,
+    fontSize: normalize(10),
     fontWeight: "600",
     color: Colors.error,
-    marginLeft: 8,
+    marginLeft: 6,
   },
   cancelButton: {
     backgroundColor: Colors.lightGray,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginBottom: 16,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginBottom: 12,
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: normalize(10),
     fontWeight: "600",
     color: Colors.textSecondary,
   },
@@ -588,59 +657,59 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   securityText: {
-    fontSize: 12,
+    fontSize: normalize(11),
     color: Colors.textSecondary,
-    marginLeft: 6,
+    marginLeft: 4,
     fontStyle: "italic",
   },
   actionsSection: {
     flex: 1,
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: normalize(22),
     fontWeight: "700",
     color: Colors.textPrimary,
-    marginBottom: 24,
+    marginBottom: 20,
     letterSpacing: -0.5,
   },
   warningCard: {
     backgroundColor: `${Colors.warning}15`,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: `${Colors.warning}40`,
   },
   warningHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   warningTitle: {
-    fontSize: 16,
+    fontSize: normalize(15),
     fontWeight: "600",
     color: Colors.textPrimary,
     marginLeft: 8,
   },
   warningText: {
-    fontSize: 14,
+    fontSize: normalize(13),
     color: Colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 16,
+    lineHeight: 18,
+    marginBottom: 14,
   },
   syncButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Colors.primary,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
   syncButtonText: {
-    fontSize: 14,
+    fontSize: normalize(13),
     fontWeight: "600",
     color: Colors.white,
-    marginLeft: 8,
+    marginLeft: 6,
   },
   actionGrid: {
     flexDirection: "row",
@@ -648,12 +717,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   actionCard: {
-    width: "48%",
     backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 14,
+    padding: isSmallScreen ? 14 : 16,
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -664,21 +732,22 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   actionIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: normalize(56),
+    height: normalize(56),
+    borderRadius: normalize(28),
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   actionTitle: {
-    fontSize: 16,
+    fontSize: normalize(14),
     fontWeight: "600",
     color: Colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: 2,
+    textAlign: "center",
   },
   actionSubtitle: {
-    fontSize: 12,
+    fontSize: normalize(11),
     color: Colors.textSecondary,
     textAlign: "center",
   },
@@ -687,34 +756,37 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: Colors.surface,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
   statusIndicator: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    flex: 1,
     marginRight: 8,
   },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    marginRight: 6,
+  },
   statusText: {
-    fontSize: 12,
+    fontSize: normalize(11),
     color: Colors.textSecondary,
     fontWeight: "500",
+    flexShrink: 1,
   },
   syncingBadge: {
     flexDirection: "row",
     alignItems: "center",
   },
   syncingText: {
-    fontSize: 12,
+    fontSize: normalize(11),
     color: Colors.primary,
-    marginLeft: 8,
+    marginLeft: 6,
     fontWeight: "500",
   },
 });
