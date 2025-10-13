@@ -1,29 +1,47 @@
 // FILE: jeg-employee-app/src/constants/colors.ts
 export const Colors = {
-  // Primary colors from JEG logo
-  primary: "#F59E0B", // Golden yellow
-  primaryDark: "#D97706", // Darker golden
-  primaryLight: "#FCD34D", // Lighter golden
+  // Primary Brand Colors (from JEG Logo)
+  primary: "#00A859", // JEG Green
+  primaryLight: "#00C569", // Lighter green
+  primaryDark: "#008F4A", // Darker green
+  primaryFaded: "#E8F7F0", // Very light green background
 
-  // Secondary colors
-  secondary: "#0F172A", // Dark slate
-  secondaryLight: "#475569", // Medium slate
+  // Secondary Colors
+  secondary: "#1A1F36", // Modern dark blue-gray (professional)
+  secondaryLight: "#2D3548", // Lighter variant
+  secondaryDark: "#0F1419", // Darker variant
 
-  // Neutral colors
+  // Accent Colors
+  accent: "#00A859", // Same as primary for consistency
+  accentLight: "#33BA76",
+
+  // Semantic Colors
+  success: "#00A859", // Using JEG green
+  error: "#EF4444", // Modern red
+  warning: "#F59E0B", // Amber
+  info: "#3B82F6", // Blue
+
+  // Neutral Colors (Modern Gray Scale)
   white: "#FFFFFF",
-  lightGray: "#F8FAFC",
-  mediumGray: "#E2E8F0",
-  darkGray: "#64748B",
+  black: "#000000",
+  lightGray: "#F8FAFB", // Very light background
+  mediumGray: "#E2E8F0", // Borders
+  darkGray: "#64748B", // Secondary text
+  textPrimary: "#1A1F36", // Main text
+  textSecondary: "#64748B", // Secondary text
 
-  // Status colors
-  success: "#10B981",
-  error: "#EF4444",
-  warning: "#F59E0B",
-  info: "#3B82F6",
+  // Functional Colors
+  background: "#FAFBFC", // App background
+  surface: "#FFFFFF", // Card surfaces
+  border: "#E2E8F0", // Borders
+  disabled: "#CBD5E1", // Disabled states
 
-  // Attendance action colors
-  timeIn: "#10B981",
-  breakIn: "#F59E0B",
-  breakOut: "#8B5CF6",
-  timeOut: "#EF4444",
+  // Overlay
+  overlay: "rgba(15, 23, 42, 0.5)",
+  overlayLight: "rgba(15, 23, 42, 0.3)",
+
+  // Gradient Colors
+  gradientStart: "#00A859",
+  gradientEnd: "#008F4A",
+  gradientLight: "#00C569",
 };

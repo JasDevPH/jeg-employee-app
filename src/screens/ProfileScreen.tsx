@@ -1,4 +1,4 @@
-// FILE: src/screens/ProfileScreen.tsx
+// FILE: jeg-employee-app/src/screens/ProfileScreen.tsx
 import React from "react";
 import {
   View,
@@ -8,8 +8,8 @@ import {
   Alert,
   ScrollView,
   StatusBar,
+  Image,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { Colors } from "../constants/colors";
@@ -28,7 +28,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     ]);
   };
 
-  // Helper functions to get user data
   const getFullName = () => {
     if (user?.employee?.firstName && user?.employee?.lastName) {
       return `${user.employee.firstName} ${user.employee.lastName}`;
@@ -58,13 +57,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     return user?.email || "Not provided";
   };
 
-  const getEmploymentStatus = () => {
-    if (user?.employee?.isActive !== undefined) {
-      return user.employee.isActive ? "Active" : "Inactive";
-    }
-    return "Active";
-  };
-
   const isActive = () => {
     if (user?.employee?.isActive !== undefined) {
       return user.employee.isActive;
@@ -72,221 +64,211 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     return true;
   };
 
-  const profileSections = [
+  const profileActions = [
     {
-      title: "Personal Information",
-      items: [
-        {
-          icon: "person-outline",
-          label: "Full Name",
-          value: getFullName(),
-          color: Colors.primary,
-        },
-        {
-          icon: "mail-outline",
-          label: "Email",
-          value: getEmail(),
-          color: Colors.info,
-        },
-        {
-          icon: "briefcase-outline",
-          label: "Position",
-          value: getPosition(),
-          color: Colors.success,
-        },
-        {
-          icon: "shield-outline",
-          label: "Role",
-          value: user?.role?.replace("_", " ") || "Employee",
-          color: Colors.warning,
-        },
-      ],
+      icon: "key-outline",
+      label: "Change Password",
+      color: Colors.primary,
+      onPress: () => navigation.navigate("ResetPassword"),
     },
     {
-      title: "Employment Details",
-      items: [
-        {
-          icon: "business-outline",
-          label: "Employment Type",
-          value: "Full Time",
-          color: Colors.primary,
-        },
-        {
-          icon: "checkmark-circle-outline",
-          label: "Status",
-          value: getEmploymentStatus(),
-          color: isActive() ? Colors.success : Colors.error,
-        },
-        {
-          icon: "calendar-outline",
-          label: "Employee ID",
-          value: getEmployeeId(),
-          color: Colors.info,
-        },
-      ],
+      icon: "notifications-outline",
+      label: "Notification Settings",
+      color: Colors.info,
+      onPress: () => {},
     },
     {
-      title: "App Information",
-      items: [
-        {
-          icon: "phone-portrait-outline",
-          label: "App Version",
-          value: "1.0.0",
-          color: Colors.darkGray,
-        },
-        {
-          icon: "shield-checkmark-outline",
-          label: "Device Security",
-          value: "Device Bound",
-          color: Colors.success,
-        },
-        {
-          icon: "sync-outline",
-          label: "Last Sync",
-          value: "Just now",
-          color: Colors.primary,
-        },
-      ],
+      icon: "help-circle-outline",
+      label: "Help & Support",
+      color: Colors.warning,
+      onPress: () => {},
+    },
+    {
+      icon: "document-text-outline",
+      label: "Terms & Privacy",
+      color: Colors.textSecondary,
+      onPress: () => {},
     },
   ];
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.secondary} />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
 
       {/* Profile Header */}
-      <LinearGradient
-        colors={[Colors.secondary, Colors.secondaryLight]}
-        style={styles.header}
-      >
+      <View style={styles.profileHeader}>
         <View style={styles.avatarContainer}>
-          <LinearGradient
-            colors={[Colors.primary, Colors.primaryDark]}
-            style={styles.avatar}
+          <View style={styles.avatarCircle}>
+            <Ionicons name="person" size={48} color={Colors.primary} />
+          </View>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: isActive() ? Colors.success : Colors.error },
+            ]}
           >
-            <Ionicons name="person" size={48} color={Colors.white} />
-          </LinearGradient>
+            <View style={styles.statusDot} />
+          </View>
         </View>
 
-        <Text style={styles.name}>{getFullName()}</Text>
+        <Text style={styles.userName}>{getFullName()}</Text>
+        <Text style={styles.userPosition}>{getPosition()}</Text>
 
-        <Text style={styles.position}>{getPosition()}</Text>
-
-        <View style={styles.idContainer}>
-          <Ionicons
-            name="id-card-outline"
-            size={16}
-            color={Colors.mediumGray}
-          />
-          <Text style={styles.employeeId}>ID: {getEmployeeId()}</Text>
+        <View style={styles.idBadge}>
+          <Ionicons name="id-card-outline" size={14} color={Colors.primary} />
+          <Text style={styles.idText}>ID: {getEmployeeId()}</Text>
         </View>
-      </LinearGradient>
+      </View>
 
-      {/* Profile Sections */}
+      {/* Info Cards */}
       <View style={styles.contentContainer}>
-        {profileSections.map((section, sectionIndex) => (
-          <View key={sectionIndex} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>Personal Information</Text>
 
-            {section.items.map((item, itemIndex) => (
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
               <View
-                key={itemIndex}
                 style={[
-                  styles.infoItem,
-                  itemIndex === section.items.length - 1 && {
-                    borderBottomWidth: 0,
-                  },
+                  styles.infoIcon,
+                  { backgroundColor: `${Colors.primary}15` },
                 ]}
               >
-                <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: `${item.color}15` },
-                  ]}
-                >
-                  <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color={item.color}
-                  />
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>{item.label}</Text>
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Full Name</Text>
+                <Text style={styles.infoValue}>{getFullName()}</Text>
+              </View>
+            </View>
+
+            <View style={styles.infoDivider} />
+
+            <View style={styles.infoRow}>
+              <View
+                style={[
+                  styles.infoIcon,
+                  { backgroundColor: `${Colors.info}15` },
+                ]}
+              >
+                <Ionicons name="mail-outline" size={20} color={Colors.info} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Email</Text>
+                <Text style={styles.infoValue}>{getEmail()}</Text>
+              </View>
+            </View>
+
+            <View style={styles.infoDivider} />
+
+            <View style={styles.infoRow}>
+              <View
+                style={[
+                  styles.infoIcon,
+                  { backgroundColor: `${Colors.success}15` },
+                ]}
+              >
+                <Ionicons
+                  name="briefcase-outline"
+                  size={20}
+                  color={Colors.success}
+                />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Position</Text>
+                <Text style={styles.infoValue}>{getPosition()}</Text>
+              </View>
+            </View>
+
+            <View style={styles.infoDivider} />
+
+            <View style={styles.infoRow}>
+              <View
+                style={[
+                  styles.infoIcon,
+                  { backgroundColor: `${Colors.warning}15` },
+                ]}
+              >
+                <Ionicons
+                  name="shield-outline"
+                  size={20}
+                  color={Colors.warning}
+                />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Status</Text>
+                <View style={styles.statusRow}>
                   <Text
                     style={[
                       styles.infoValue,
-                      item.label === "Status" &&
-                        !isActive() && { color: Colors.error },
+                      { color: isActive() ? Colors.success : Colors.error },
                     ]}
                   >
-                    {item.value}
+                    {isActive() ? "Active" : "Inactive"}
                   </Text>
                 </View>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.actionsSection}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+
+          <View style={styles.actionsGrid}>
+            {profileActions.map((action, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.actionCard}
+                onPress={action.onPress}
+              >
+                <View
+                  style={[
+                    styles.actionIcon,
+                    { backgroundColor: `${action.color}15` },
+                  ]}
+                >
+                  <Ionicons
+                    name={action.icon as any}
+                    size={24}
+                    color={action.color}
+                  />
+                </View>
+                <Text style={styles.actionLabel}>{action.label}</Text>
                 <Ionicons
                   name="chevron-forward"
                   size={16}
-                  color={Colors.mediumGray}
+                  color={Colors.textSecondary}
                 />
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
-        ))}
+        </View>
 
-        {/* Actions Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Actions</Text>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => navigation.navigate("ResetPassword")}
-          >
-            <Ionicons name="key-outline" size={20} color={Colors.primary} />
-            <Text style={styles.actionButtonText}>Change Password</Text>
-            <Ionicons
-              name="chevron-forward-outline"
-              size={16}
-              color={Colors.darkGray}
+        {/* App Info */}
+        <View style={styles.appInfoSection}>
+          <View style={styles.appInfoCard}>
+            <Image
+              source={require("../../assets/jeg_logo.png")}
+              style={styles.appLogo}
+              resizeMode="contain"
             />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton} onPress={() => {}}>
-            <Ionicons
-              name="notifications-outline"
-              size={20}
-              color={Colors.primary}
-            />
-            <Text style={styles.actionButtonText}>Notification Settings</Text>
-            <Ionicons
-              name="chevron-forward-outline"
-              size={16}
-              color={Colors.darkGray}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton} onPress={() => {}}>
-            <Ionicons
-              name="help-circle-outline"
-              size={20}
-              color={Colors.primary}
-            />
-            <Text style={styles.actionButtonText}>Help & Support</Text>
-            <Ionicons
-              name="chevron-forward-outline"
-              size={16}
-              color={Colors.darkGray}
-            />
-          </TouchableOpacity>
+            <Text style={styles.appName}>JEG Employee App</Text>
+            <Text style={styles.appVersion}>Version 1.0.0</Text>
+            <Text style={styles.appCopyright}>
+              © 2024 JEG Ventures Corporation
+            </Text>
+          </View>
         </View>
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <LinearGradient
-            colors={[Colors.error, "#DC2626"]}
-            style={styles.logoutButtonGradient}
-          >
-            <Ionicons name="log-out-outline" size={24} color={Colors.white} />
-            <Text style={styles.logoutButtonText}>Sign Out</Text>
-          </LinearGradient>
+          <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+          <Text style={styles.logoutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -296,147 +278,214 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
+    backgroundColor: Colors.background,
   },
-  header: {
+  profileHeader: {
+    backgroundColor: Colors.surface,
     alignItems: "center",
     paddingVertical: 40,
     paddingHorizontal: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   avatarContainer: {
-    marginBottom: 20,
+    position: "relative",
+    marginBottom: 16,
   },
-  avatar: {
+  avatarCircle: {
     width: 100,
     height: 100,
     borderRadius: 50,
+    backgroundColor: `${Colors.primary}20`,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    borderWidth: 3,
+    borderColor: Colors.primary,
   },
-  name: {
+  statusBadge: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 3,
+    borderColor: Colors.surface,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.white,
+  },
+  userName: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: Colors.white,
+    fontWeight: "700",
+    color: Colors.textPrimary,
     marginBottom: 4,
-    textAlign: "center",
+    letterSpacing: -0.5,
   },
-  position: {
+  userPosition: {
     fontSize: 16,
-    color: Colors.mediumGray,
+    color: Colors.textSecondary,
     marginBottom: 12,
   },
-  idContainer: {
+  idBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: Colors.primaryFaded,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 8,
   },
-  actionButton: {
-    backgroundColor: Colors.white,
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    shadowColor: Colors.secondary,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  actionButtonText: {
-    fontSize: 16,
-    color: Colors.secondary,
-    marginLeft: 16,
-    flex: 1,
-  },
-  employeeId: {
+  idText: {
     fontSize: 12,
-    color: Colors.mediumGray,
+    color: Colors.primary,
+    fontWeight: "600",
     marginLeft: 4,
-    fontWeight: "500",
   },
   contentContainer: {
-    padding: 16,
+    padding: 20,
   },
-  section: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    marginBottom: 16,
-    shadowColor: Colors.secondary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+  infoSection: {
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.secondary,
-    padding: 20,
-    paddingBottom: 12,
+    color: Colors.textPrimary,
+    marginBottom: 16,
+    letterSpacing: -0.3,
   },
-  infoItem: {
+  infoCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
   },
-  iconContainer: {
+  infoIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 16,
+    marginRight: 12,
   },
   infoContent: {
     flex: 1,
   },
   infoLabel: {
     fontSize: 12,
-    color: Colors.darkGray,
+    color: Colors.textSecondary,
     marginBottom: 2,
     fontWeight: "500",
   },
   infoValue: {
     fontSize: 16,
-    fontWeight: "500",
-    color: Colors.secondary,
+    fontWeight: "600",
+    color: Colors.textPrimary,
   },
-  logoutButton: {
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  infoDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: 16,
+  },
+  actionsSection: {
+    marginBottom: 24,
+  },
+  actionsGrid: {
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     overflow: "hidden",
-    marginBottom: 40,
-    shadowColor: Colors.error,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: 2,
   },
-  logoutButtonGradient: {
+  actionCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  actionLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "500",
+    color: Colors.textPrimary,
+  },
+  appInfoSection: {
+    marginBottom: 24,
+  },
+  appInfoCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: "center",
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  appLogo: {
+    width: 60,
+    height: 60,
+    marginBottom: 12,
+  },
+  appName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  appVersion: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  appCopyright: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+  },
+  logoutButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 18,
-    paddingHorizontal: 24,
+    backgroundColor: `${Colors.error}15`,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 40,
   },
   logoutButtonText: {
-    color: Colors.white,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
-    marginLeft: 12,
+    color: Colors.error,
+    marginLeft: 8,
   },
 });
 

@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { API_BASE_URL } from "../config/api";
@@ -101,12 +100,7 @@ const LeaveRequestScreen: React.FC<LeaveRequestScreenProps> = ({
         Alert.alert(
           "Success",
           "Your leave request has been submitted and is pending approval.",
-          [
-            {
-              text: "OK",
-              onPress: () => navigation.goBack(),
-            },
-          ]
+          [{ text: "OK", onPress: () => navigation.goBack() }]
         );
       } else {
         Alert.alert("Error", data.message || "Failed to submit leave request");
@@ -131,35 +125,35 @@ const LeaveRequestScreen: React.FC<LeaveRequestScreenProps> = ({
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.secondary} />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
 
       <View style={styles.content}>
         {/* Header */}
-        <View style={styles.headerContainer}>
+        <View style={styles.headerSection}>
           <Text style={styles.title}>Request Leave</Text>
           <Text style={styles.subtitle}>
-            Fill out the form below to submit your leave request
+            Fill in the details below to submit your leave request
           </Text>
         </View>
 
-        {/* Leave Type */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Leave Type</Text>
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
+        {/* Leave Type Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Leave Type</Text>
+          <View style={styles.leaveTypeCard}>
+            <View style={styles.selectedTypeHeader}>
               <View
                 style={[
-                  styles.typeIcon,
-                  { backgroundColor: getSelectedLeaveType().color },
+                  styles.typeIconCircle,
+                  { backgroundColor: `${getSelectedLeaveType().color}20` },
                 ]}
               >
                 <Ionicons
                   name={getSelectedLeaveType().icon as any}
-                  size={20}
-                  color={Colors.white}
+                  size={24}
+                  color={getSelectedLeaveType().color}
                 />
               </View>
-              <Text style={styles.pickerLabel}>
+              <Text style={styles.selectedTypeText}>
                 {getSelectedLeaveType().label}
               </Text>
             </View>
@@ -180,29 +174,38 @@ const LeaveRequestScreen: React.FC<LeaveRequestScreenProps> = ({
         </View>
 
         {/* Date Selection */}
-        <View style={styles.dateSection}>
-          <View style={styles.dateRow}>
-            <View style={styles.dateContainer}>
-              <Text style={styles.sectionTitle}>Start Date</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Duration</Text>
+          <View style={styles.dateGrid}>
+            <View style={styles.dateInputContainer}>
+              <Text style={styles.dateLabel}>Start Date</Text>
               <TouchableOpacity
                 style={styles.dateButton}
                 onPress={() => setShowStartPicker(true)}
               >
-                <Ionicons name="calendar" size={20} color={Colors.primary} />
-                <Text style={styles.dateText}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
+                <Text style={styles.dateButtonText}>
                   {startDate.toLocaleDateString()}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.dateContainer}>
-              <Text style={styles.sectionTitle}>End Date</Text>
+            <View style={styles.dateInputContainer}>
+              <Text style={styles.dateLabel}>End Date</Text>
               <TouchableOpacity
                 style={styles.dateButton}
                 onPress={() => setShowEndPicker(true)}
               >
-                <Ionicons name="calendar" size={20} color={Colors.primary} />
-                <Text style={styles.dateText}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
+                <Text style={styles.dateButtonText}>
                   {endDate.toLocaleDateString()}
                 </Text>
               </TouchableOpacity>
@@ -210,10 +213,10 @@ const LeaveRequestScreen: React.FC<LeaveRequestScreenProps> = ({
           </View>
 
           {/* Duration Display */}
-          <View style={styles.durationContainer}>
-            <Ionicons name="time" size={20} color={Colors.primary} />
+          <View style={styles.durationBadge}>
+            <Ionicons name="time-outline" size={20} color={Colors.primary} />
             <Text style={styles.durationText}>
-              Duration: {calculateDuration()} day(s)
+              Total: {calculateDuration()} day(s)
             </Text>
           </View>
         </View>
@@ -253,17 +256,17 @@ const LeaveRequestScreen: React.FC<LeaveRequestScreenProps> = ({
         )}
 
         {/* Reason */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Reason</Text>
-          <View style={styles.textAreaContainer}>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Reason for Leave</Text>
+          <View style={styles.textAreaCard}>
             <TextInput
               style={styles.textArea}
               value={reason}
               onChangeText={setReason}
               placeholder="Please provide a detailed reason for your leave request..."
-              placeholderTextColor={Colors.darkGray}
+              placeholderTextColor={Colors.textSecondary}
               multiline
-              numberOfLines={4}
+              numberOfLines={5}
               textAlignVertical="top"
             />
           </View>
@@ -275,19 +278,14 @@ const LeaveRequestScreen: React.FC<LeaveRequestScreenProps> = ({
           onPress={handleSubmit}
           disabled={loading}
         >
-          <LinearGradient
-            colors={[Colors.primary, Colors.primaryDark]}
-            style={styles.submitButtonGradient}
-          >
-            {loading ? (
-              <ActivityIndicator color={Colors.white} />
-            ) : (
-              <>
-                <Ionicons name="send" size={20} color={Colors.white} />
-                <Text style={styles.submitButtonText}>Submit Request</Text>
-              </>
-            )}
-          </LinearGradient>
+          {loading ? (
+            <ActivityIndicator color={Colors.white} />
+          ) : (
+            <>
+              <Ionicons name="send" size={20} color={Colors.white} />
+              <Text style={styles.submitButtonText}>Submit Request</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -297,114 +295,117 @@ const LeaveRequestScreen: React.FC<LeaveRequestScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
+    backgroundColor: Colors.background,
   },
   content: {
     padding: 20,
+    paddingBottom: 40,
   },
-  headerContainer: {
+  headerSection: {
     marginBottom: 32,
   },
   title: {
     fontSize: 28,
-    fontWeight: "bold",
-    color: Colors.secondary,
+    fontWeight: "700",
+    color: Colors.textPrimary,
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: Colors.darkGray,
+    color: Colors.textSecondary,
     lineHeight: 22,
   },
-  sectionContainer: {
+  section: {
     marginBottom: 24,
   },
-  sectionTitle: {
+  sectionLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.secondary,
+    color: Colors.textPrimary,
     marginBottom: 12,
+    letterSpacing: -0.3,
   },
-  pickerContainer: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
+  leaveTypeCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: Colors.mediumGray,
-    shadowColor: Colors.secondary,
+    borderColor: Colors.border,
+    overflow: "hidden",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
-  pickerHeader: {
+  selectedTypeHeader: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.mediumGray,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.background,
   },
-  typeIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  typeIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
-  pickerLabel: {
+  selectedTypeText: {
     fontSize: 16,
-    fontWeight: "500",
-    color: Colors.secondary,
+    fontWeight: "600",
+    color: Colors.textPrimary,
   },
   picker: {
     height: 50,
   },
-  dateSection: {
-    marginBottom: 24,
-  },
-  dateRow: {
+  dateGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 16,
   },
-  dateContainer: {
+  dateInputContainer: {
     flex: 1,
     marginHorizontal: 4,
   },
+  dateLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
   dateButton: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: Colors.mediumGray,
+    borderColor: Colors.border,
     borderRadius: 12,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: Colors.secondary,
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
-  dateText: {
+  dateButtonText: {
     fontSize: 16,
-    color: Colors.secondary,
-    marginLeft: 12,
     fontWeight: "500",
+    color: Colors.textPrimary,
+    marginLeft: 12,
   },
-  durationContainer: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
+  durationBadge: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: Colors.primaryFaded,
+    borderRadius: 12,
+    padding: 16,
     borderWidth: 2,
     borderColor: Colors.primary,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   durationText: {
     fontSize: 16,
@@ -412,47 +413,44 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginLeft: 8,
   },
-  textAreaContainer: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
+  textAreaCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: Colors.mediumGray,
-    shadowColor: Colors.secondary,
+    borderColor: Colors.border,
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
   textArea: {
     padding: 16,
     fontSize: 16,
-    color: Colors.secondary,
-    height: 120,
+    color: Colors.textPrimary,
+    minHeight: 120,
     textAlignVertical: "top",
   },
   submitButton: {
-    borderRadius: 16,
-    marginTop: 32,
-    marginBottom: Platform.OS === "ios" ? 40 : 20,
-    overflow: "hidden",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.primary,
+    paddingVertical: 18,
+    borderRadius: 12,
+    marginTop: 8,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 6,
-  },
-  submitButtonGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 18,
+    elevation: 4,
   },
   submitButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   submitButtonText: {
     color: Colors.white,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
     marginLeft: 8,
   },

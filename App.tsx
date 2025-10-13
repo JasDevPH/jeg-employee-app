@@ -15,7 +15,7 @@ import LeaveHistoryScreen from "./src/screens/LeaveHistoryScreen";
 import LeaveRequestScreen from "./src/screens/LeaveRequestScreen";
 import PayslipScreen from "./src/screens/PayslipScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
-import ResetPasswordScreen from "./src/screens/ResetPasswordScreen"; // ADDED
+import ResetPasswordScreen from "./src/screens/ResetPasswordScreen";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { Colors } from "./src/constants/colors";
 
@@ -44,33 +44,49 @@ function MainTabs() {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.darkGray,
+        tabBarInactiveTintColor: Colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: Colors.white,
-          borderTopColor: Colors.mediumGray,
+          backgroundColor: Colors.surface,
+          borderTopColor: Colors.border,
+          borderTopWidth: 1,
           height: 88,
           paddingBottom: 8,
           paddingTop: 8,
+          shadowColor: Colors.black,
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          elevation: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
         },
         headerStyle: {
-          backgroundColor: Colors.secondary,
-          shadowColor: Colors.secondary,
+          backgroundColor: Colors.surface,
+          shadowColor: Colors.black,
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 4,
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
           elevation: 4,
+          borderBottomWidth: 1,
+          borderBottomColor: Colors.border,
         },
-        headerTintColor: Colors.white,
+        headerTintColor: Colors.textPrimary,
         headerTitleStyle: {
-          fontWeight: "600",
+          fontWeight: "700",
           fontSize: 18,
+          letterSpacing: -0.3,
         },
       })}
     >
       <Tab.Screen
         name="Attendance"
         component={AttendanceScreen}
-        options={{ title: "Attendance" }}
+        options={{
+          title: "Attendance",
+          headerShown: false,
+        }}
       />
       <Tab.Screen
         name="Leaves"
@@ -85,7 +101,10 @@ function MainTabs() {
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ title: "Profile" }}
+        options={{
+          title: "Profile",
+          headerShown: false,
+        }}
       />
     </Tab.Navigator>
   );
@@ -99,7 +118,26 @@ function AppNavigator() {
   }
 
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: Colors.surface,
+          shadowColor: Colors.black,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          elevation: 4,
+          borderBottomWidth: 1,
+          borderBottomColor: Colors.border,
+        },
+        headerTintColor: Colors.textPrimary,
+        headerTitleStyle: {
+          fontWeight: "700",
+          fontSize: 18,
+          letterSpacing: -0.3,
+        },
+      }}
+    >
       {user ? (
         <>
           <Stack.Screen
@@ -112,34 +150,13 @@ function AppNavigator() {
             component={LeaveRequestScreen}
             options={{
               title: "Request Leave",
-              headerStyle: {
-                backgroundColor: Colors.secondary,
-                shadowColor: Colors.secondary,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: 4,
-              },
-              headerTintColor: Colors.white,
-              headerTitleStyle: { fontWeight: "600" },
             }}
           />
-          {/* ADDED: Reset Password screen for logged-in users */}
           <Stack.Screen
             name="ResetPassword"
             component={ResetPasswordScreen}
             options={{
               title: "Change Password",
-              headerStyle: {
-                backgroundColor: Colors.secondary,
-                shadowColor: Colors.secondary,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: 4,
-              },
-              headerTintColor: Colors.white,
-              headerTitleStyle: { fontWeight: "600" },
             }}
           />
         </>
@@ -150,7 +167,6 @@ function AppNavigator() {
             component={LoginScreen}
             options={{ headerShown: false }}
           />
-          {/* ADDED: Reset Password screen for logged-out users */}
           <Stack.Screen
             name="ResetPassword"
             component={ResetPasswordScreen}
@@ -183,7 +199,7 @@ export default function App() {
     <AuthProvider>
       <NavigationContainer onReady={onLayoutRootView}>
         <AppNavigator />
-        <StatusBar style="light" backgroundColor={Colors.secondary} />
+        <StatusBar style="dark" backgroundColor={Colors.background} />
       </NavigationContainer>
     </AuthProvider>
   );

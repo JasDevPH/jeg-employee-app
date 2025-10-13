@@ -13,7 +13,6 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import * as ScreenCapture from "expo-screen-capture";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { qrGenerator } from "../utils/qrGenerator";
@@ -37,22 +36,14 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
     const status = qrGenerator.getStatus();
     setKeysAvailable(status.isReady);
     setDebugInfo(status);
-    console.log("Keys availability check:", status);
   }, []);
 
   const syncKeys = useCallback(async () => {
-    if (!token) {
-      console.log("No token available for key sync");
-      return;
-    }
-
-    console.log("Starting key sync...");
+    if (!token) return;
     setSyncing(true);
 
     try {
       const success = await qrGenerator.syncKeys(token);
-      console.log("Key sync result:", success);
-
       if (success) {
         checkKeysAvailability();
         Alert.alert("Success", "Keys synced successfully!");
@@ -63,42 +54,24 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
         );
       }
     } catch (error) {
-      console.error("Key sync failed:", error);
       Alert.alert("Error", "Key sync failed. Please try again.");
     } finally {
       setSyncing(false);
     }
   }, [token, checkKeysAvailability]);
 
-  // Initialize QR generator with user data
   useEffect(() => {
-    console.log("AttendanceScreen useEffect - user data:", {
-      employeeId: user?.employee?.id || user?.employeeId, // Use employee.id if available
-      hasDeviceKey: !!deviceKey,
-      hasToken: !!token,
-    });
-
-    // Use employee.id if user has employee record, otherwise use employeeId
     const actualEmployeeId = user?.employee?.id || user?.employeeId;
 
     if (actualEmployeeId && deviceKey) {
-      console.log("Setting up QR generator with:", {
-        employeeId: actualEmployeeId,
-        deviceKey: deviceKey.substring(0, 10) + "...",
-      });
-
       qrGenerator.setEmployeeId(actualEmployeeId);
       qrGenerator.setDeviceKey(deviceKey);
-
       syncKeys();
-    } else {
-      console.log("Missing required data for QR setup");
     }
 
     checkKeysAvailability();
   }, [user, deviceKey, token, syncKeys, checkKeysAvailability]);
 
-  // QR expiry timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (currentQR && qrExpiry) {
@@ -114,7 +87,6 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
     return () => clearInterval(timer);
   }, [currentQR, qrExpiry]);
 
-  // Screen capture protection cleanup
   useEffect(() => {
     return () => {
       ScreenCapture.allowScreenCaptureAsync().catch(console.error);
@@ -124,10 +96,7 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
   const generateQR = async (
     type: "TIME_IN" | "BREAK_IN" | "BREAK_OUT" | "TIME_OUT"
   ) => {
-    console.log(`Generating QR for ${type}...`);
-
     try {
-      // Check if we have valid keys first
       if (!qrGenerator.hasValidKeys()) {
         Alert.alert(
           "QR Generation Failed",
@@ -143,40 +112,17 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
       const qrData = await qrGenerator.generateOfflineQR(type);
 
       if (qrData) {
-        console.log("QR generated successfully, length:", qrData.length);
-
-        // Enable screen capture protection
         await ScreenCapture.preventScreenCaptureAsync();
-
         setCurrentQR(qrData);
         setQRType(type);
-        setQRExpiry(Date.now() + 30 * 1000); // 30 seconds
-      } else {
-        console.error("QR generation returned null");
-        Alert.alert(
-          "QR Generation Failed",
-          "Unable to generate QR code. Please sync keys or check your connection.",
-          [
-            { text: "Sync Keys", onPress: syncKeys },
-            {
-              text: "Check Status",
-              onPress: () => {
-                const status = qrGenerator.getStatus();
-                Alert.alert("Debug Info", JSON.stringify(status, null, 2));
-              },
-            },
-            { text: "OK" },
-          ]
-        );
+        setQRExpiry(Date.now() + 30 * 1000);
       }
     } catch (error) {
-      console.error("QR generation failed:", error);
       Alert.alert("Error", `Failed to generate QR code: ${error}`);
     }
   };
 
   const clearQR = async () => {
-    console.log("Clearing QR code...");
     await ScreenCapture.allowScreenCaptureAsync();
     setCurrentQR(null);
     setQRType(null);
@@ -191,32 +137,6 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
     ]);
   };
 
-  const handleDebugMode = () => {
-    const status = qrGenerator.getStatus();
-    Alert.alert(
-      "Debug Information",
-      JSON.stringify(
-        {
-          ...status,
-          userEmployeeId: user?.employeeId,
-          hasToken: !!token,
-          hasDeviceKey: !!deviceKey,
-        },
-        null,
-        2
-      ),
-      [
-        {
-          text: "Clear Storage",
-          onPress: () => qrGenerator.clearStorage(),
-          style: "destructive",
-        },
-        { text: "Force Sync", onPress: syncKeys },
-        { text: "OK" },
-      ]
-    );
-  };
-
   const getQRTypeDisplay = (type: string) => {
     const types = {
       TIME_IN: "Time In",
@@ -229,10 +149,10 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
 
   const getQRTypeIcon = (type: string) => {
     const icons = {
-      TIME_IN: "play-circle",
-      BREAK_IN: "pause-circle",
+      TIME_IN: "log-in",
+      BREAK_IN: "cafe",
       BREAK_OUT: "play",
-      TIME_OUT: "stop-circle",
+      TIME_OUT: "log-out",
     };
     return icons[type as keyof typeof icons] || "checkmark-circle";
   };
@@ -246,247 +166,231 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
     );
   }
 
+  const now = new Date();
+  const greeting =
+    now.getHours() < 12
+      ? "Good Morning"
+      : now.getHours() < 18
+      ? "Good Afternoon"
+      : "Good Evening";
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.secondary} />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
 
-      {/* Header */}
-      <LinearGradient
-        colors={[Colors.secondary, Colors.secondaryLight]}
-        style={styles.header}
-      >
-        <View style={styles.headerContent}>
-          <View style={styles.userInfo}>
-            <Text style={styles.welcomeText}>
-              Welcome,{" "}
-              {user.employee?.firstName || user.role?.replace("_", " ")}
-            </Text>
-            <Text style={styles.employeeIdText}>
-              ID: {user.employee?.employeeCode || user.employeeId}
-            </Text>
-            <Text style={styles.dateText}>
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </Text>
+      {/* Modern Header */}
+      <View style={styles.modernHeader}>
+        <View style={styles.headerTop}>
+          <View style={styles.headerLeft}>
+            <View style={styles.avatarCircle}>
+              <Ionicons name="person" size={24} color={Colors.primary} />
+            </View>
+            <View style={styles.userDetails}>
+              <Text style={styles.greetingText}>{greeting}</Text>
+              <Text style={styles.userName}>
+                {user.employee?.firstName || user.role?.replace("_", " ")}
+              </Text>
+            </View>
           </View>
-          <View style={styles.headerButtons}>
-            <TouchableOpacity
-              style={styles.debugButton}
-              onPress={handleDebugMode}
-              onLongPress={handleDebugMode}
-            >
-              <Ionicons name="bug-outline" size={16} color={Colors.white} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleLogout}
-            >
-              <Ionicons name="log-out-outline" size={18} color={Colors.white} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.logoutIconButton}
+            onPress={handleLogout}
+          >
+            <Ionicons
+              name="log-out-outline"
+              size={24}
+              color={Colors.textSecondary}
+            />
+          </TouchableOpacity>
         </View>
-      </LinearGradient>
 
-      {/* Main Content */}
+        <View style={styles.dateCard}>
+          <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
+          <Text style={styles.dateText}>
+            {new Date().toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </Text>
+        </View>
+      </View>
+
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {currentQR ? (
-          <View style={styles.qrContainer}>
-            <LinearGradient
-              colors={[Colors.primary, Colors.primaryDark]}
-              style={styles.qrTypeHeader}
-            >
-              <Ionicons
-                name={getQRTypeIcon(qrType!) as any}
-                size={24}
-                color={Colors.white}
-              />
-              <Text style={styles.qrTitle}>{getQRTypeDisplay(qrType!)}</Text>
-            </LinearGradient>
-
-            <View style={styles.qrWrapper}>
-              <QRCode
-                value={currentQR}
-                size={240}
-                backgroundColor={Colors.white}
-                color={Colors.secondary}
-                logoMargin={2}
-                logoSize={20}
-              />
-            </View>
-
-            <View style={styles.timerContainer}>
-              <View style={styles.timerCircle}>
-                <Text style={styles.timerNumber}>{timeLeft}</Text>
+          <View style={styles.qrSection}>
+            <View style={styles.qrCard}>
+              <View style={styles.qrHeader}>
+                <View
+                  style={[
+                    styles.qrIconCircle,
+                    { backgroundColor: `${Colors.primary}20` },
+                  ]}
+                >
+                  <Ionicons
+                    name={getQRTypeIcon(qrType!) as any}
+                    size={28}
+                    color={Colors.primary}
+                  />
+                </View>
+                <Text style={styles.qrTitle}>{getQRTypeDisplay(qrType!)}</Text>
               </View>
-              <Text style={styles.timerLabel}>seconds remaining</Text>
-            </View>
 
-            <View style={styles.qrActions}>
+              <View style={styles.qrCodeWrapper}>
+                <QRCode
+                  value={currentQR}
+                  size={240}
+                  backgroundColor={Colors.white}
+                  color={Colors.secondary}
+                />
+              </View>
+
+              <View style={styles.timerSection}>
+                <View style={styles.timerBadge}>
+                  <Ionicons
+                    name="time-outline"
+                    size={20}
+                    color={Colors.error}
+                  />
+                  <Text style={styles.timerText}>{timeLeft}s remaining</Text>
+                </View>
+              </View>
+
               <TouchableOpacity style={styles.cancelButton} onPress={clearQR}>
-                <Ionicons name="close" size={18} color={Colors.white} />
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-            </View>
 
-            <View style={styles.instructionsContainer}>
-              <Text style={styles.instructionText}>
-                Show this QR code to the kiosk scanner
-              </Text>
-              <Text style={styles.securityText}>
-                🔒 Screenshots are disabled for security
-              </Text>
+              <View style={styles.securityNote}>
+                <Ionicons
+                  name="shield-checkmark"
+                  size={16}
+                  color={Colors.success}
+                />
+                <Text style={styles.securityText}>
+                  Screenshots disabled for security
+                </Text>
+              </View>
             </View>
           </View>
         ) : (
-          <View style={styles.actionsContainer}>
-            <Text style={styles.instructionTitle}>
-              Select Attendance Action
-            </Text>
+          <View style={styles.actionsSection}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
 
-            {/* Status/Warning Container */}
             {!keysAvailable && (
-              <View style={styles.warningContainer}>
-                <LinearGradient
-                  colors={[Colors.warning, "#F59E0B"]}
-                  style={styles.warningGradient}
-                >
-                  <Ionicons name="warning" size={24} color={Colors.white} />
+              <View style={styles.warningCard}>
+                <View style={styles.warningHeader}>
+                  <Ionicons
+                    name="alert-circle"
+                    size={24}
+                    color={Colors.warning}
+                  />
                   <Text style={styles.warningTitle}>Setup Required</Text>
-                </LinearGradient>
-                <View style={styles.warningContent}>
-                  <Text style={styles.warningText}>
-                    QR keys not available. Please sync to enable attendance QR
-                    generation.
-                  </Text>
-                  {debugInfo && (
-                    <Text style={styles.debugText}>
-                      Keys: {debugInfo.validKeys}/{debugInfo.totalKeys} •
-                      Employee: {debugInfo.hasEmployeeId ? "✓" : "✗"} • Device:{" "}
-                      {debugInfo.hasDeviceKey ? "✓" : "✗"}
-                    </Text>
-                  )}
-                  <TouchableOpacity
-                    style={styles.syncButton}
-                    onPress={syncKeys}
-                    disabled={syncing}
-                  >
-                    {syncing ? (
-                      <ActivityIndicator color={Colors.white} size="small" />
-                    ) : (
-                      <>
-                        <Ionicons name="sync" size={16} color={Colors.white} />
-                        <Text style={styles.syncButtonText}>Sync Keys</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
                 </View>
+                <Text style={styles.warningText}>
+                  QR keys not available. Please sync to enable attendance QR
+                  generation.
+                </Text>
+                <TouchableOpacity
+                  style={styles.syncButton}
+                  onPress={syncKeys}
+                  disabled={syncing}
+                >
+                  {syncing ? (
+                    <ActivityIndicator color={Colors.white} size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="sync" size={18} color={Colors.white} />
+                      <Text style={styles.syncButtonText}>Sync Keys Now</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             )}
 
-            {/* Action Buttons Grid */}
-            <View style={styles.buttonGrid}>
+            <View style={styles.actionGrid}>
               <TouchableOpacity
                 style={[
-                  styles.actionButton,
-                  styles.timeInButton,
-                  !keysAvailable && styles.disabledButton,
+                  styles.actionCard,
+                  !keysAvailable && styles.disabledCard,
                 ]}
                 onPress={() => generateQR("TIME_IN")}
                 disabled={!keysAvailable}
               >
-                <LinearGradient
-                  colors={
-                    keysAvailable
-                      ? [Colors.success, "#059669"]
-                      : [Colors.darkGray, Colors.mediumGray]
-                  }
-                  style={styles.actionButtonGradient}
+                <View
+                  style={[
+                    styles.actionIconCircle,
+                    { backgroundColor: `${Colors.success}20` },
+                  ]}
                 >
-                  <Ionicons name="play-circle" size={32} color={Colors.white} />
-                  <Text style={styles.actionButtonText}>Time In</Text>
-                  <Text style={styles.actionButtonSubtext}>Start your day</Text>
-                </LinearGradient>
+                  <Ionicons name="log-in" size={32} color={Colors.success} />
+                </View>
+                <Text style={styles.actionTitle}>Time In</Text>
+                <Text style={styles.actionSubtitle}>Start your day</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
-                  styles.actionButton,
-                  styles.breakInButton,
-                  !keysAvailable && styles.disabledButton,
+                  styles.actionCard,
+                  !keysAvailable && styles.disabledCard,
                 ]}
                 onPress={() => generateQR("BREAK_IN")}
                 disabled={!keysAvailable}
               >
-                <LinearGradient
-                  colors={
-                    keysAvailable
-                      ? [Colors.primary, Colors.primaryDark]
-                      : [Colors.darkGray, Colors.mediumGray]
-                  }
-                  style={styles.actionButtonGradient}
+                <View
+                  style={[
+                    styles.actionIconCircle,
+                    { backgroundColor: `${Colors.warning}20` },
+                  ]}
                 >
-                  <Ionicons
-                    name="pause-circle"
-                    size={32}
-                    color={Colors.white}
-                  />
-                  <Text style={styles.actionButtonText}>Break In</Text>
-                  <Text style={styles.actionButtonSubtext}>Start break</Text>
-                </LinearGradient>
+                  <Ionicons name="cafe" size={32} color={Colors.warning} />
+                </View>
+                <Text style={styles.actionTitle}>Break In</Text>
+                <Text style={styles.actionSubtitle}>Take a break</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
-                  styles.actionButton,
-                  styles.breakOutButton,
-                  !keysAvailable && styles.disabledButton,
+                  styles.actionCard,
+                  !keysAvailable && styles.disabledCard,
                 ]}
                 onPress={() => generateQR("BREAK_OUT")}
                 disabled={!keysAvailable}
               >
-                <LinearGradient
-                  colors={
-                    keysAvailable
-                      ? ["#8B5CF6", "#7C3AED"]
-                      : [Colors.darkGray, Colors.mediumGray]
-                  }
-                  style={styles.actionButtonGradient}
+                <View
+                  style={[
+                    styles.actionIconCircle,
+                    { backgroundColor: `${Colors.info}20` },
+                  ]}
                 >
-                  <Ionicons name="play" size={32} color={Colors.white} />
-                  <Text style={styles.actionButtonText}>Break Out</Text>
-                  <Text style={styles.actionButtonSubtext}>Resume work</Text>
-                </LinearGradient>
+                  <Ionicons name="play" size={32} color={Colors.info} />
+                </View>
+                <Text style={styles.actionTitle}>Break Out</Text>
+                <Text style={styles.actionSubtitle}>Resume work</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
-                  styles.actionButton,
-                  styles.timeOutButton,
-                  !keysAvailable && styles.disabledButton,
+                  styles.actionCard,
+                  !keysAvailable && styles.disabledCard,
                 ]}
                 onPress={() => generateQR("TIME_OUT")}
                 disabled={!keysAvailable}
               >
-                <LinearGradient
-                  colors={
-                    keysAvailable
-                      ? [Colors.error, "#DC2626"]
-                      : [Colors.darkGray, Colors.mediumGray]
-                  }
-                  style={styles.actionButtonGradient}
+                <View
+                  style={[
+                    styles.actionIconCircle,
+                    { backgroundColor: `${Colors.error}20` },
+                  ]}
                 >
-                  <Ionicons name="stop-circle" size={32} color={Colors.white} />
-                  <Text style={styles.actionButtonText}>Time Out</Text>
-                  <Text style={styles.actionButtonSubtext}>End your day</Text>
-                </LinearGradient>
+                  <Ionicons name="log-out" size={32} color={Colors.error} />
+                </View>
+                <Text style={styles.actionTitle}>Time Out</Text>
+                <Text style={styles.actionSubtitle}>End your day</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -494,39 +398,29 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
       </ScrollView>
 
       {/* Status Footer */}
-      <LinearGradient
-        colors={[Colors.white, Colors.lightGray]}
-        style={styles.statusContainer}
-      >
-        <View style={styles.statusRow}>
-          <View style={styles.statusIndicator}>
-            <Ionicons
-              name={keysAvailable ? "checkmark-circle" : "alert-circle"}
-              size={16}
-              color={keysAvailable ? Colors.success : Colors.warning}
-            />
-            <Text style={styles.statusText}>
-              {keysAvailable ? "Ready (Offline capable)" : "Sync required"}
-            </Text>
-          </View>
-
-          {syncing && (
-            <View style={styles.syncingIndicator}>
-              <ActivityIndicator size="small" color={Colors.primary} />
-              <Text style={styles.syncingText}>Syncing...</Text>
-            </View>
-          )}
-        </View>
-
-        {debugInfo && __DEV__ && (
-          <Text style={styles.debugFooter}>
-            Keys: {debugInfo.validKeys}/{debugInfo.totalKeys} | Last sync:{" "}
-            {debugInfo.lastSync
-              ? new Date(debugInfo.lastSync).toLocaleTimeString()
-              : "Never"}
+      <View style={styles.statusFooter}>
+        <View style={styles.statusIndicator}>
+          <View
+            style={[
+              styles.statusDot,
+              {
+                backgroundColor: keysAvailable
+                  ? Colors.success
+                  : Colors.warning,
+              },
+            ]}
+          />
+          <Text style={styles.statusText}>
+            {keysAvailable ? "Ready • Offline capable" : "Sync required"}
           </Text>
+        </View>
+        {syncing && (
+          <View style={styles.syncingBadge}>
+            <ActivityIndicator size="small" color={Colors.primary} />
+            <Text style={styles.syncingText}>Syncing...</Text>
+          </View>
         )}
-      </LinearGradient>
+      </View>
     </View>
   );
 };
@@ -534,281 +428,286 @@ const AttendanceScreen: React.FC<AttendanceScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
+    backgroundColor: Colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Colors.lightGray,
+    backgroundColor: Colors.background,
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: 16,
     fontSize: 16,
-    color: Colors.darkGray,
+    color: Colors.textSecondary,
+    fontWeight: "500",
   },
-  header: {
-    paddingTop: Platform.OS === "ios" ? 50 : 20,
+  modernHeader: {
+    backgroundColor: Colors.surface,
+    paddingTop: Platform.OS === "ios" ? 60 : 20,
     paddingBottom: 20,
     paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  headerContent: {
+  headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    marginBottom: 16,
   },
-  userInfo: {
-    flex: 1,
-  },
-  welcomeText: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: Colors.white,
-    marginBottom: 4,
-  },
-  employeeIdText: {
-    fontSize: 14,
-    color: Colors.white,
-    opacity: 0.9,
-    marginBottom: 2,
-  },
-  dateText: {
-    fontSize: 13,
-    color: Colors.mediumGray,
-  },
-  headerButtons: {
+  headerLeft: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
   },
-  debugButton: {
-    padding: 8,
-    marginRight: 8,
+  avatarCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: `${Colors.primary}20`,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  userDetails: {
+    flex: 1,
+  },
+  greetingText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: "500",
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    letterSpacing: -0.3,
+  },
+  logoutIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.lightGray,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dateCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primaryFaded,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    alignSelf: "flex-start",
   },
-  logoutButton: {
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "rgba(239, 68, 68, 0.2)",
+  dateText: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontWeight: "600",
+    marginLeft: 6,
   },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
     padding: 20,
   },
-  qrContainer: {
-    alignItems: "center",
-    justifyContent: "center",
+  qrSection: {
     flex: 1,
+    justifyContent: "center",
   },
-  qrTypeHeader: {
-    flexDirection: "row",
+  qrCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 24,
+    padding: 32,
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 20,
-    marginBottom: 24,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  qrHeader: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  qrIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
   },
   qrTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: Colors.white,
-    marginLeft: 8,
+    fontSize: 24,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    letterSpacing: -0.5,
   },
-  qrWrapper: {
+  qrCodeWrapper: {
     backgroundColor: Colors.white,
     padding: 24,
     borderRadius: 20,
-    shadowColor: Colors.secondary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  timerSection: {
     marginBottom: 24,
   },
-  timerContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  timerCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.error,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  timerNumber: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: Colors.white,
-  },
-  timerLabel: {
-    fontSize: 14,
-    color: Colors.darkGray,
-  },
-  qrActions: {
-    marginBottom: 20,
-  },
-  cancelButton: {
+  timerBadge: {
     flexDirection: "row",
-    backgroundColor: Colors.darkGray,
-    paddingHorizontal: 24,
+    alignItems: "center",
+    backgroundColor: `${Colors.error}15`,
+    paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
-    alignItems: "center",
   },
-  cancelButtonText: {
-    color: Colors.white,
+  timerText: {
     fontSize: 16,
     fontWeight: "600",
+    color: Colors.error,
     marginLeft: 8,
   },
-  instructionsContainer: {
-    alignItems: "center",
+  cancelButton: {
+    backgroundColor: Colors.lightGray,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginBottom: 16,
   },
-  instructionText: {
+  cancelButtonText: {
     fontSize: 16,
-    color: Colors.secondary,
-    textAlign: "center",
-    marginBottom: 8,
-    fontWeight: "500",
+    fontWeight: "600",
+    color: Colors.textSecondary,
+  },
+  securityNote: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   securityText: {
     fontSize: 12,
-    color: Colors.darkGray,
-    textAlign: "center",
+    color: Colors.textSecondary,
+    marginLeft: 6,
     fontStyle: "italic",
   },
-  actionsContainer: {
+  actionsSection: {
     flex: 1,
   },
-  instructionTitle: {
+  sectionTitle: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: Colors.secondary,
-    textAlign: "center",
+    fontWeight: "700",
+    color: Colors.textPrimary,
     marginBottom: 24,
+    letterSpacing: -0.5,
   },
-  warningContainer: {
-    marginBottom: 24,
+  warningCard: {
+    backgroundColor: `${Colors.warning}15`,
     borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: Colors.warning,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: `${Colors.warning}40`,
   },
-  warningGradient: {
+  warningHeader: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
+    marginBottom: 12,
   },
   warningTitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: Colors.white,
-    marginLeft: 12,
-  },
-  warningContent: {
-    backgroundColor: Colors.white,
-    padding: 16,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+    marginLeft: 8,
   },
   warningText: {
-    color: Colors.secondary,
     fontSize: 14,
+    color: Colors.textSecondary,
     lineHeight: 20,
-    marginBottom: 8,
-  },
-  debugText: {
-    fontSize: 11,
-    color: Colors.darkGray,
-    fontFamily: "monospace",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   syncButton: {
     flexDirection: "row",
-    backgroundColor: Colors.warning,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
     alignItems: "center",
-    alignSelf: "flex-start",
+    justifyContent: "center",
+    backgroundColor: Colors.primary,
+    paddingVertical: 12,
+    borderRadius: 10,
   },
   syncButtonText: {
-    color: Colors.white,
     fontSize: 14,
     fontWeight: "600",
+    color: Colors.white,
     marginLeft: 8,
   },
-  buttonGrid: {
+  actionGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
   },
-  actionButton: {
+  actionCard: {
     width: "48%",
-    height: 120,
-    marginBottom: 16,
+    backgroundColor: Colors.surface,
     borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: Colors.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    padding: 20,
+    alignItems: "center",
+    marginBottom: 16,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 2,
   },
-  actionButtonGradient: {
-    flex: 1,
+  disabledCard: {
+    opacity: 0.5,
+  },
+  actionIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: "center",
     alignItems: "center",
-    padding: 16,
+    marginBottom: 12,
   },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  timeInButton: {},
-  breakInButton: {},
-  breakOutButton: {},
-  timeOutButton: {},
-  actionButtonText: {
-    color: Colors.white,
+  actionTitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    marginTop: 8,
-    marginBottom: 2,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+    marginBottom: 4,
   },
-  actionButtonSubtext: {
-    color: Colors.white,
-    fontSize: 11,
-    opacity: 0.9,
+  actionSubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: "center",
   },
-  statusContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: Colors.mediumGray,
-  },
-  statusRow: {
+  statusFooter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
   statusIndicator: {
     flexDirection: "row",
     alignItems: "center",
   },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
   statusText: {
     fontSize: 12,
-    color: Colors.darkGray,
-    marginLeft: 8,
+    color: Colors.textSecondary,
     fontWeight: "500",
   },
-  syncingIndicator: {
+  syncingBadge: {
     flexDirection: "row",
     alignItems: "center",
   },
@@ -817,13 +716,6 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginLeft: 8,
     fontWeight: "500",
-  },
-  debugFooter: {
-    fontSize: 10,
-    color: Colors.darkGray,
-    textAlign: "center",
-    marginTop: 4,
-    fontFamily: "monospace",
   },
 });
 

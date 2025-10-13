@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   StatusBar,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -164,133 +165,108 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <StatusBar
-          barStyle="light-content"
-          backgroundColor={Colors.secondary}
+          barStyle="dark-content"
+          backgroundColor={Colors.background}
         />
-        <LinearGradient
-          colors={[Colors.secondary, Colors.secondaryLight]}
-          style={styles.gradient}
-        >
-          <View style={styles.content}>
-            <View style={styles.logoContainer}>
-              <LinearGradient
-                colors={[
-                  Colors.primaryLight,
-                  Colors.primary,
-                  Colors.primaryDark,
-                ]}
-                style={styles.logoGradient}
-              >
-                <Text style={styles.logoText}>JEG</Text>
-              </LinearGradient>
-              <Text style={styles.title}>Reset Password</Text>
-              <Text style={styles.subtitle}>Create a new secure password</Text>
-            </View>
+        <View style={styles.modernContainer}>
+          <View style={styles.logoSection}>
+            <Image
+              source={require("../../assets/jeg_logo.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.modernTitle}>Reset Password</Text>
+            <Text style={styles.modernSubtitle}>
+              Create a new secure password
+            </Text>
+          </View>
 
-            <View style={styles.formContainer}>
-              <View style={styles.form}>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>New Password</Text>
-                  <View style={styles.inputWrapper}>
-                    <TextInput
-                      style={styles.inputWithIcon}
-                      value={newPassword}
-                      onChangeText={setNewPassword}
-                      placeholder="Enter new password"
-                      placeholderTextColor={Colors.darkGray}
-                      secureTextEntry={!showNewPassword}
-                      editable={!loading}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                    <TouchableOpacity
-                      onPress={() => setShowNewPassword(!showNewPassword)}
-                      style={styles.eyeIcon}
-                    >
-                      <Ionicons
-                        name={
-                          showNewPassword ? "eye-off-outline" : "eye-outline"
-                        }
-                        size={20}
-                        color={Colors.darkGray}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Confirm Password</Text>
-                  <View style={styles.inputWrapper}>
-                    <TextInput
-                      style={styles.inputWithIcon}
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      placeholder="Confirm new password"
-                      placeholderTextColor={Colors.darkGray}
-                      secureTextEntry={!showConfirmPassword}
-                      editable={!loading}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                    <TouchableOpacity
-                      onPress={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      style={styles.eyeIcon}
-                    >
-                      <Ionicons
-                        name={
-                          showConfirmPassword
-                            ? "eye-off-outline"
-                            : "eye-outline"
-                        }
-                        size={20}
-                        color={Colors.darkGray}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
+          <View style={styles.formCard}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.modernLabel}>New Password</Text>
+              <View style={styles.modernInputWrapper}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={Colors.darkGray}
+                />
+                <TextInput
+                  style={styles.modernInput}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholder="Enter new password"
+                  placeholderTextColor={Colors.darkGray}
+                  secureTextEntry={!showNewPassword}
+                  editable={!loading}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
                 <TouchableOpacity
-                  style={[
-                    styles.loginButton,
-                    loading && styles.loginButtonDisabled,
-                  ]}
-                  onPress={handlePasswordReset}
-                  disabled={loading}
+                  onPress={() => setShowNewPassword(!showNewPassword)}
                 >
-                  <LinearGradient
-                    colors={[Colors.primary, Colors.primaryDark]}
-                    style={styles.loginButtonGradient}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color={Colors.white} />
-                    ) : (
-                      <>
-                        <Ionicons
-                          name="shield-checkmark"
-                          size={20}
-                          color={Colors.white}
-                        />
-                        <Text style={styles.loginButtonText}>
-                          Update Password
-                        </Text>
-                      </>
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.skipButton}
-                  onPress={handleBackToLogin}
-                  disabled={loading}
-                >
-                  <Text style={styles.skipButtonText}>Back to Login</Text>
+                  <Ionicons
+                    name={showNewPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={Colors.darkGray}
+                  />
                 </TouchableOpacity>
               </View>
             </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.modernLabel}>Confirm Password</Text>
+              <View style={styles.modernInputWrapper}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={Colors.darkGray}
+                />
+                <TextInput
+                  style={styles.modernInput}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Confirm new password"
+                  placeholderTextColor={Colors.darkGray}
+                  secureTextEntry={!showConfirmPassword}
+                  editable={!loading}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  <Ionicons
+                    name={
+                      showConfirmPassword ? "eye-off-outline" : "eye-outline"
+                    }
+                    size={20}
+                    color={Colors.darkGray}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.modernButton, loading && styles.buttonDisabled]}
+              onPress={handlePasswordReset}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <Text style={styles.modernButtonText}>Update Password</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.textButton}
+              onPress={handleBackToLogin}
+              disabled={loading}
+            >
+              <Text style={styles.textButtonText}>Back to Login</Text>
+            </TouchableOpacity>
           </View>
-        </LinearGradient>
+        </View>
       </KeyboardAvoidingView>
     );
   }
@@ -300,97 +276,96 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <StatusBar barStyle="light-content" backgroundColor={Colors.secondary} />
-      <LinearGradient
-        colors={[Colors.secondary, Colors.secondaryLight]}
-        style={styles.gradient}
-      >
-        <View style={styles.content}>
-          <View style={styles.logoContainer}>
-            <LinearGradient
-              colors={[Colors.primaryLight, Colors.primary, Colors.primaryDark]}
-              style={styles.logoGradient}
-            >
-              <Text style={styles.logoText}>JEG</Text>
-            </LinearGradient>
-            <Text style={styles.title}>Employee Portal</Text>
-            <Text style={styles.subtitle}>JEG Ventures Payroll System</Text>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+      <View style={styles.modernContainer}>
+        <View style={styles.logoSection}>
+          <Image
+            source={require("../../assets/jeg_logo.png")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.modernTitle}>Welcome Back</Text>
+          <Text style={styles.modernSubtitle}>
+            Sign in to JEG Employee Portal
+          </Text>
+        </View>
+
+        <View style={styles.formCard}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.modernLabel}>Employee ID or Email</Text>
+            <View style={styles.modernInputWrapper}>
+              <Ionicons
+                name="person-outline"
+                size={20}
+                color={Colors.darkGray}
+              />
+              <TextInput
+                style={styles.modernInput}
+                value={employeeId}
+                onChangeText={setEmployeeId}
+                placeholder="Enter your employee ID or email"
+                placeholderTextColor={Colors.darkGray}
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!loading}
+              />
+            </View>
           </View>
 
-          <View style={styles.formContainer}>
-            <View style={styles.form}>
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Employee ID or Email</Text>
-                <TextInput
-                  style={styles.input}
-                  value={employeeId}
-                  onChangeText={setEmployeeId}
-                  placeholder="Enter your employee ID or email"
-                  placeholderTextColor={Colors.darkGray}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!loading}
+          <View style={styles.inputGroup}>
+            <Text style={styles.modernLabel}>Password</Text>
+            <View style={styles.modernInputWrapper}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color={Colors.darkGray}
+              />
+              <TextInput
+                style={styles.modernInput}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter your password"
+                placeholderTextColor={Colors.darkGray}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!loading}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Ionicons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={Colors.darkGray}
                 />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={styles.inputWithIcon}
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Enter your password"
-                    placeholderTextColor={Colors.darkGray}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    editable={!loading}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                  >
-                    <Ionicons
-                      name={showPassword ? "eye-off-outline" : "eye-outline"}
-                      size={20}
-                      color={Colors.darkGray}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.loginButton,
-                  loading && styles.loginButtonDisabled,
-                ]}
-                onPress={handleLogin}
-                disabled={loading}
-              >
-                <LinearGradient
-                  colors={[Colors.primary, Colors.primaryDark]}
-                  style={styles.loginButtonGradient}
-                >
-                  {loading ? (
-                    <ActivityIndicator color={Colors.white} />
-                  ) : (
-                    <Text style={styles.loginButtonText}>Sign In</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.forgotPasswordButton}
-                onPress={handleForgotPassword}
-                disabled={loading}
-              >
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
             </View>
           </View>
+
+          <TouchableOpacity
+            style={styles.forgotPassword}
+            onPress={handleForgotPassword}
+            disabled={loading}
+          >
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.modernButton, loading && styles.buttonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <Text style={styles.modernButtonText}>Sign In</Text>
+            )}
+          </TouchableOpacity>
         </View>
-      </LinearGradient>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>JEG Ventures Corporation © 2025</Text>
+        </View>
+      </View>
     </KeyboardAvoidingView>
   );
 };
@@ -398,137 +373,116 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.background,
   },
-  gradient: {
-    flex: 1,
-  },
-  content: {
+  modernContainer: {
     flex: 1,
     padding: 24,
     justifyContent: "center",
   },
-  logoContainer: {
+  logoSection: {
     alignItems: "center",
     marginBottom: 48,
   },
-  logoGradient: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 24,
+  },
+  modernTitle: {
+    fontSize: 32,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  modernSubtitle: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    textAlign: "center",
+  },
+  formCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 24,
+    padding: 32,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  inputGroup: {
+    marginBottom: 24,
+  },
+  modernLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+    marginBottom: 8,
+  },
+  modernInputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.lightGray,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 56,
+  },
+  modernInput: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.textPrimary,
+    marginLeft: 12,
+  },
+  forgotPassword: {
+    alignSelf: "flex-end",
+    marginBottom: 24,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.primary,
+  },
+  modernButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    height: 56,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 4,
   },
-  logoText: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: Colors.white,
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+  buttonDisabled: {
+    opacity: 0.6,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: Colors.white,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.mediumGray,
-    textAlign: "center",
-  },
-  formContainer: {
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: 24,
-    shadowColor: Colors.secondary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  form: {
-    marginBottom: 24,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.secondary,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: Colors.lightGray,
-    borderWidth: 1,
-    borderColor: Colors.mediumGray,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: Colors.secondary,
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.lightGray,
-    borderWidth: 1,
-    borderColor: Colors.mediumGray,
-    borderRadius: 12,
-  },
-  inputWithIcon: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
-    color: Colors.secondary,
-  },
-  eyeIcon: {
-    padding: 16,
-  },
-  loginButton: {
-    borderRadius: 12,
-    marginTop: 8,
-    overflow: "hidden",
-  },
-  loginButtonGradient: {
-    padding: 16,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  loginButtonDisabled: {
-    opacity: 0.7,
-  },
-  loginButtonText: {
-    color: Colors.white,
+  modernButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    marginLeft: 8,
+    color: Colors.white,
+    letterSpacing: 0.5,
   },
-  skipButton: {
-    marginTop: 16,
+  textButton: {
     alignItems: "center",
-  },
-  skipButtonText: {
-    color: Colors.darkGray,
-    fontSize: 14,
-  },
-  forgotPasswordButton: {
     marginTop: 16,
-    alignItems: "center",
     paddingVertical: 8,
   },
-  forgotPasswordText: {
-    color: Colors.primary,
+  textButtonText: {
     fontSize: 14,
     fontWeight: "600",
+    color: Colors.textSecondary,
+  },
+  footer: {
+    alignItems: "center",
+    marginTop: 32,
+  },
+  footerText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
   },
 });
 
